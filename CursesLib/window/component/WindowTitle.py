@@ -17,4 +17,6 @@ class WindowTitle(BaseComponent):
             offsetX = int(self.window.width / 2 - textLen / 2)
             titleText = f" {self.title} " if self.space else self.title
 
+            self.window.debug('w: '+str(offsetX))
+
             self.window.screen.addstr(0, offsetX, titleText)

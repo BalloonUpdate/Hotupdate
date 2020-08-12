@@ -1,3 +1,4 @@
+import platform
 import time
 from ctypes import *
 
@@ -47,7 +48,10 @@ def setFont():
     # font.FontWeight = 400
     # font.FaceName = "Lucida Console"
 
-    font.FaceName = "黑体"
+    if platform.platform().startswith('Windows-10'):
+        font.FaceName = "黑体"
+    else:
+        font.FaceName = "新宋体"
 
     windll.kernel32.SetCurrentConsoleFontEx(
         handle,
@@ -91,7 +95,7 @@ class CONSOLE_SCREEN_BUFFER_INFO(Structure):
 def setBuffer():
     handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
-    width = 130
+    width = 110
     height = 40
 
     rect = SMALL_RECT()
@@ -106,15 +110,15 @@ def setBuffer():
         pointer(rect))
     print('Last: ' + str(windll.kernel32.GetLastError()))
 
-    ####
+    ###
 
-    # bufferSize = COORD(width, height)
-    #
-    # windll.kernel32.SetConsoleScreenBufferSize(
-    #     handle,
-    #     pointer(bufferSize))
-    # ret = windll.kernel32.GetLastError()
-    # print('Last: ' + str(ret))
+    bufferSize = COORD(width, height)
+
+    windll.kernel32.SetConsoleScreenBufferSize(
+        handle,
+        pointer(bufferSize))
+    ret = windll.kernel32.GetLastError()
+    print('Last: ' + str(ret))
 
 
 if __name__ == "__main__":

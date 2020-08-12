@@ -1,10 +1,13 @@
+from ..AbstractWindow import AbstractWindow
+
+
 class BaseComponent:
 	"""一个组件的基本类"""
 
 	def __init__(self):
-		self.window = None  # initialize by ComponentContainer
-		self.trbl = (0, 0, 0, 0)  # 四边向中心进行定位(t,r,b,l),如果某个值为负数则从对面开始定位
-		self.enable = True
+		self.window: AbstractWindow = None  # initialize by ComponentContainer
+		self.trbl: tuple = (0, 0, 0, 0)  # 四边向中心进行定位(t,r,b,l),如果某个值为负数则从对面开始定位
+		self.enable: bool = True
 
 	def getXyxywh(self):
 		"""返回可直接用于curses绘制的相对坐标"""

@@ -1,6 +1,5 @@
 from abc import ABC
 
-
 class ComponentContainer(ABC):  # inherited by BaseWindow
 	def __init__(self):
 		self.components = {}

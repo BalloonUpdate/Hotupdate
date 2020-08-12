@@ -1,5 +1,5 @@
 import json
-import locale
+import platform
 import sys
 import threading
 import time
@@ -9,7 +9,6 @@ from tqdm import tqdm
 
 from CursesLib.Terminal import Terminal
 from CursesLib.utils.ChineseSpace import smartStretch
-from CursesLib.window.ListWindow import ListWindow
 from CursesLib.window.ProcessListWindow import ProcessListWindow
 from CursesLib.window.component.CloseButton import CloseButton
 from CursesLib.window.component.WindowTitle import WindowTitle
@@ -46,6 +45,12 @@ class AList(ProcessListWindow):
     def __init__(self):
         super().__init__()
 
+        if not platform.platform().startswith('Windows-10'):
+            border = self.getComponent('border')
+            border.enable = False
+            # border.bgChar = curses.ACS_VLINE
+            border.markChar = '|'
+
         self.addComponent("title", WindowTitle(smartStretch('更新列表')))
         self.addComponent("close", CloseButton())
 
@@ -65,7 +70,7 @@ def work():
         print('settings.json不存在')
         default = {"metadataUrl": "http://127.0.0.1", "resourcesUrl": "http://127.0.0.1/resources"}
         settingsFile.put(json.dumps(default))
-        exit(0)
+        exit()
 
     settings = json.loads(settingsFile.content)
 
@@ -91,7 +96,7 @@ def work():
     # print('\n'.join(hl.downloadList))
 
     for p in hl.deleteList:
-        al.addItem(p, '删除 ' + p, 0.0, None)
+        al.addItem(p, '删除文件 ' + p, 0.0, None)
 
     for p in hl.downloadList:
         al.addItem(p, '等待下载 '+p, 0.0, None)
@@ -106,7 +111,7 @@ def work():
         else:
             al.drawAFrame()
 
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def downloadFile2(url: str, file: File, relPath: str):
         r = requests.get(url, stream=True)
@@ -117,7 +122,9 @@ def work():
         received = 0
 
         file.makeParentDirs()
-        f = open(file.absPath, 'xb+')
+
+        File(file.absPath + '.ts').delete()
+        f = open(file.absPath + '.ts', 'xb+')
 
         for chunk in r.iter_content(chunk_size=chunkSize):
             f.write(chunk)
@@ -135,7 +142,7 @@ def work():
             al.drawAFrame()
 
         f.close()
-        al.getItem(p)[1] = '完成 ' + p
+        al.getItem(p)[1] = '下载完成 ' + p
         al.lookAtItem(p)
 
     for p in hl.downloadList:
@@ -153,7 +160,6 @@ if __name__ == "__main__":
     if sys.prefix == sys.base_prefix:
         setFont()
         setBuffer()
-        print('不在虚拟环境中')
 
     ts = Terminal()
     al = AList()

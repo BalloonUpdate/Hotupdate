@@ -1,7 +1,7 @@
 @echo off
 if "%1"=="" (
-	echo 未指定主文件名
+	echo main file is not given!
 ) else (
-    pyinstaller -F -c -n NewUpdaterTest %1
+    pyinstaller -F -c -n %2 %1
     echo Build finished!
 )

@@ -1,4 +1,4 @@
-import sys
+import platform
 
 
 def insertSpaceBehindChinese(text, spaceChar=' '):
@@ -7,8 +7,6 @@ def insertSpaceBehindChinese(text, spaceChar=' '):
 
         for ch in word[start:]:
             if '\u4e00' <= ch <= '\u9fff':
-                # self.debug(f"-------{ch}|{index}|{word[start:]}")
-                # self.debug(f"-------[{ch}]")
                 return index + startAt
             index += 1
         return -1
@@ -18,8 +16,6 @@ def insertSpaceBehindChinese(text, spaceChar=' '):
         pos = findChinese(startAt, text)
 
         if pos != -1:
-            # self.debug(f"<{raw} at {startAt}>")
-            # self.debug(' '+(' '*pos)+f'^ at {str(pos)}')
             text = text[:pos + 1] + spaceChar + text[pos + 1:]
 
             startAt = pos + 1
@@ -30,7 +26,8 @@ def insertSpaceBehindChinese(text, spaceChar=' '):
 
 
 def smartStretch(text, spaceChar=' '):
-    if sys.prefix == sys.base_prefix or True:
+    if platform.platform().startswith('Windows-10'):
         return insertSpaceBehindChinese(text, spaceChar)
-    else:
-        text
+    return text
+
+    # if sys.prefix == sys.base_prefix and False:
