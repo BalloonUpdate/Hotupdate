@@ -3,7 +3,7 @@ import logging
 import random
 from abc import abstractmethod, ABC
 
-from window.component.ComponentContainer import ComponentContainer
+from .component.ComponentContainer import ComponentContainer
 
 logging.basicConfig(filename='logs.txt', level=logging.INFO)
 
@@ -310,6 +310,14 @@ class AbstractWindow(ComponentContainer, ABC):
         if self.passEvent(x, y, self.onMouseWheel, directionUp):
             self.distributeOnMouseWheel(x, y, directionUp)  # 不是子窗口事件时才将这个事件传递给组件们
 
+    def drag(self, x, y):
+        """传递事件"""
+
+        self.checkDestroyState("can't pass the drag event")
+
+        if self.passEvent(x, y, self.onDrag):
+            self.distributeOnDrag(x, y)  # 不是子窗口事件时才将这个事件传递给组件们
+
     def draw(self, forceRefresh=False):
 
         if forceRefresh or self.refreshFlag:
@@ -374,6 +382,9 @@ class AbstractWindow(ComponentContainer, ABC):
         pass
 
     def onMouseWheel(self, x, y, directionUp):
+        pass
+
+    def onDrag(self, x, y):
         pass
 
     class DestroyedException(Exception):

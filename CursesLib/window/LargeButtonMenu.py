@@ -1,8 +1,8 @@
 import curses
 from abc import ABC
 
-from window.AbstractWindow import AbstractWindow
-from window.component.Border import Border
+from .AbstractWindow import AbstractWindow
+from .component.Border import Border
 
 
 class BigButtonMenu(AbstractWindow, ABC):

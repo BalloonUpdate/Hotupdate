@@ -1,6 +1,3 @@
-import curses
-
-
 class BaseComponent:
 	"""一个组件的基本类"""
 
@@ -60,11 +57,14 @@ class BaseComponent:
 	def onWindowDraw(self):
 		pass
 
-	def onWindowUpdate(self, deltaTime):
-		pass
-
 	def onWindowClick(self, x, y):
 		pass
 
 	def onWindowMouseWheel(self, x, y, directionUp):
+		pass
+
+	def onWindowDrag(self, x, y):
+		pass
+
+	def onWindowUpdate(self, deltaTime):
 		pass

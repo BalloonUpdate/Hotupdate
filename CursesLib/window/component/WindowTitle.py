@@ -1,6 +1,6 @@
 import curses
 
-from window.component.BaseComponent import BaseComponent
+from .BaseComponent import BaseComponent
 
 
 class WindowTitle(BaseComponent):

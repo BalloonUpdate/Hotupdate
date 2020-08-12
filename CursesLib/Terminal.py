@@ -3,7 +3,7 @@ import os
 import time
 import platform
 
-from window.AbstractWindow import AbstractWindow
+from .window.AbstractWindow import AbstractWindow
 
 # 鼠标事件的对应代码(掩码)
 KB = {
@@ -59,8 +59,12 @@ class Terminal(AbstractWindow):
             curses.init_pair(6, curses.COLOR_YELLOW, 0)
             curses.init_pair(7, curses.COLOR_WHITE, 0)
 
+            curses.init_pair(10, curses.COLOR_WHITE, curses.COLOR_BLACK)
+            curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_WHITE)
+            curses.init_pair(12, curses.COLOR_CYAN, curses.COLOR_BLACK)
+
     def cursesLoop(self, screen):
-        self.initializeCurses(screen, getchTimeout=10)
+        self.initializeCurses(screen, getchTimeout=20)
 
         # 关闭光标可见
         curses.curs_set(0)
@@ -123,6 +127,12 @@ class Terminal(AbstractWindow):
                     for w in self.subWindows:
                         w.mouseWheel(mouseX, mouseY, directionUp=False)  # x,y均为0,没法使用,但又非传递不可
 
+                elif bState & KB["drag"] == 0:
+                    # self.debug('safsafsf: '+str(bState))
+                    # self.debug('drag: ' + str(mouseX) + ', ' + str(mouseY) + '|' + bState)
+                    for w in self.subWindows:
+                        w.drag(mouseX, mouseY)
+
         return True
 
     def mainLoop(self):
@@ -167,3 +177,6 @@ class Terminal(AbstractWindow):
 
     def onResize(self, width, height):
         return self.trblToXywh(0, 0, 0, 0)
+
+    def __repr__(self):
+        return 'Ternimal'

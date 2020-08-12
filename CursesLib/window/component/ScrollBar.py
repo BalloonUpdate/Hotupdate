@@ -1,6 +1,6 @@
 import curses
 
-from window.component.BaseComponent import BaseComponent
+from .BaseComponent import BaseComponent
 
 
 class ScrollBar(BaseComponent):
@@ -9,7 +9,7 @@ class ScrollBar(BaseComponent):
 	def __init__(self):
 		super().__init__()
 
-		self.trbl = (2, 2, 2, -2)
+		self.trbl = (1, 2, 1, -2)
 
 		self.progress = 0  # 滚动条的滚动进度(0~1)
 		self.viewProportion = 0  # 滚动条的可视比例(0~1)
@@ -36,7 +36,8 @@ class ScrollBar(BaseComponent):
 
 		if markLen > 0:
 			assert 0 < bgLen + y1 <= self.window.height, f"bgLen: {bgLen}, y1: {y1}, both: {y1 + bgLen}, h: {h}, self: {str(self.window)}, p: {self.getXyxywh()}, {self.trbl}"
-			self.window.screen.vline(y1, x1, curses.ACS_BOARD, bgLen)
+			# self.window.screen.vline(y1, x1, curses.ACS_BOARD, bgLen)
+			self.window.screen.vline(y1, x1, ' ', bgLen)
 			self.window.screen.vline(y1 + move, x1, curses.ACS_BLOCK, markLen)
 
 	# 调试用的，应该由本组件所属的窗口自己去控制progress和viewProportion属性，而不是由本组件的事件函数去控制，故注释
