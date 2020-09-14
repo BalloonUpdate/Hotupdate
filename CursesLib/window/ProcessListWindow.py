@@ -82,17 +82,17 @@ class ProcessListWindow(AbstractWindow, ABC):
                 ch = text[p] if p < len(text) else ' '
 
                 if process == -1:
-                    cp = 12
+                    colorPair = 12
                 else:
                     if process >= 1:
-                        cp = 3  # green over black
+                        colorPair = 3  # green over black
                     else:
                         if p >= sp or process >= 1:
-                            cp = 10
+                            colorPair = 10
                         else:
-                            cp = 11
+                            colorPair = 11
 
-                self.screen.attrset(curses.color_pair(cp))
+                self.screen.attrset(curses.color_pair(colorPair))
 
                 self.screen.addstr(i + 1, 2 + p, ch)
             self.resetColor()

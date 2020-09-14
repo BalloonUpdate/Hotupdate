@@ -1,4 +1,3 @@
 {
-  "metadataUrl": "http://127.0.0.1",
-  "resourcesUrl": "http://127.0.0.1/resources"
+  "url": "http://127.0.0.1"
 }

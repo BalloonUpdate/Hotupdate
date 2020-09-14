@@ -1,4 +1,4 @@
-from Terminal import Terminal
+from . import Terminal
 from window.BigButtonMenu import BigButtonMenu
 from window.ListWindow import ListWindow
 from window.component.CloseButton import CloseButton

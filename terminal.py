@@ -108,7 +108,7 @@ def setBuffer():
         handle,
         c_bool(True),
         pointer(rect))
-    print('Last: ' + str(windll.kernel32.GetLastError()))
+    print('windll.kernel32.GetLastError(): ' + str(windll.kernel32.GetLastError()))
 
     ###
 
@@ -118,7 +118,7 @@ def setBuffer():
         handle,
         pointer(bufferSize))
     ret = windll.kernel32.GetLastError()
-    print('Last: ' + str(ret))
+    print('windll.kernel32.GetLastError(): ' + str(ret))
 
 
 if __name__ == "__main__":

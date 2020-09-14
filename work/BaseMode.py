@@ -1,14 +1,24 @@
+import logging
+import re
 from abc import ABC, abstractmethod
 
 from File import File
 
+# logging.basicConfig(filename='logs.txt', level=logging.INFO)
+#
+#
+# def log2(text):
+#     logging.info(" " + text)
 
-class B(ABC):
-    def __init__(self, basePath):
+
+class BaseMode(ABC):
+    def __init__(self, basePath, regexes, regexesMode):
         super().__init__()
         self.basePath: File = basePath
         self.deleteList: list = []
         self.downloadList: list = []
+        self.regexes: list = regexes
+        self.regexesMode: bool = regexesMode  # True: AND mode, False: Or mode
 
     def delete(self, dir: File):
 
@@ -24,7 +34,7 @@ class B(ABC):
         if 'tree' in node:
 
             for n in node['tree']:
-                dd = dir.child(n['name'])
+                dd = dir.append(n['name'])
 
                 if 'tree' in n:
                     self.download(n, dd)
@@ -33,7 +43,30 @@ class B(ABC):
         else:
             self.downloadList.append(dir.relPath(self.basePath))
 
+    def test(self, path) -> bool:
+
+        if len(self.regexes) == 0:
+            return True
+
+        results = [
+            re.match(reg, path) is not None
+            for reg in self.regexes
+        ]
+
+        result = self.regexesMode
+
+        for r in results:
+            if self.regexesMode:  # AND mode
+                result &= r
+            else:  # OR mode
+                result |= r
+
+        return result
+
     @abstractmethod
     def scan(self, dir: File, tree: list):
         pass
 
+    def debug(self, text):
+        # log2(str(self.__class__) + ": " + text)
+        pass

@@ -75,12 +75,14 @@ class ListWindow(AbstractWindow, ABC):
 
             if sys.prefix == sys.base_prefix:
                 text = insertSpaceBehindChinese(text)
-            # self.debug('{'+text+'}')
 
             self.screen.addstr(i + 1, 2, text)
 
-    def addItem(self, name, text, onClick=None, *args):
+    def addItem(self, name, text=None, onClick=None, *args):
         """添加一个项目"""
+
+        if text==None:
+            text = name
 
         self.items.append([name, text, onClick, *args])
 

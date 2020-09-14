@@ -12,7 +12,8 @@ def insertSpaceBehindChinese(text, spaceChar=' '):
         return -1
 
     startAt = 0
-    for i in range(0, 10):
+
+    while True:
         pos = findChinese(startAt, text)
 
         if pos != -1:
@@ -26,8 +27,26 @@ def insertSpaceBehindChinese(text, spaceChar=' '):
 
 
 def smartStretch(text, spaceChar=' '):
+    # win10平台+实机环境
     if platform.platform().startswith('Windows-10'):
         return insertSpaceBehindChinese(text, spaceChar)
     return text
 
-    # if sys.prefix == sys.base_prefix and False:
+
+def split(text, width):
+    """将单行字符串分隔成多行"""
+    lines = []
+    temp = ''
+    for ch in text:
+        if ch == '\n' or ch == '\r\n':
+            lines.append(temp)
+            temp = ''
+        else:
+            temp += ch
+
+        if len(temp) >= width:
+            lines.append(temp)
+            temp = ''
+    if len(temp) > 0:
+        lines.append(temp)
+    return lines

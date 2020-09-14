@@ -5,11 +5,11 @@ from abc import abstractmethod, ABC
 
 from .component.ComponentContainer import ComponentContainer
 
-logging.basicConfig(filename='logs.txt', level=logging.INFO)
-
-
-def log2(text):
-    logging.info("   " + text)
+# logging.basicConfig(filename='logs.txt', level=logging.INFO)
+#
+#
+# def log2(text):
+#     logging.info(" " + text)
 
 
 class AbstractWindow(ComponentContainer, ABC):
@@ -18,7 +18,7 @@ class AbstractWindow(ComponentContainer, ABC):
     def __init__(self, monopolyMode, maskMode):
         super().__init__()
 
-        self.screen = None
+        self.screen: curses.window = None
         self.parent = None
         self.subWindows = []  # 所有的子窗口
 
@@ -31,7 +31,8 @@ class AbstractWindow(ComponentContainer, ABC):
         self.lastMousePosition = None  # (x, y)  # 上一次鼠标(点击/拖动/滚轮)事件的位置
 
     def debug(self, text):
-        log2(str(self) + ": " + text)
+        # log2(str(self.__class__) + ": " + text)
+        pass
 
     def execute(self, fun, delay=0):
         """在curses之外执行函数,因为是有命令回显的,执行完后会延迟delay毫秒然后再切回curses
@@ -55,7 +56,7 @@ class AbstractWindow(ComponentContainer, ABC):
         # 注册这个子窗口
         self.subWindows.append(win)
 
-        if initialize:
+        if initialize and not self.isDestroyed:
             self.initializeSubWins()
 
     def noticeReleaseSubWindows(self):
@@ -88,15 +89,15 @@ class AbstractWindow(ComponentContainer, ABC):
     def destroy(self):
         """临时性销毁本窗口,释放使用release()"""
 
+        self.onDestroy()  # 调用具体实现的函数
+        self.distributeOnDestroy()  # 也把这个事件传递给组件们
+
         self.screen = None
         self.hasDestroyedFlag = True
 
         # 销毁所有子窗口
         for win in self.subWindows:
             win.destroy()
-
-        self.onDestroy()  # 调用具体实现的函数
-        self.distributeOnDestroy()  # 也把这个事件传递给组件们
 
     def trblToXywh(self, top, right, bottom, left):
         """将相对于个边的向内偏移量转换成坐标和长宽,(0,0,0,0)就是铺满父窗口

@@ -41,7 +41,10 @@ class Terminal(AbstractWindow):
 
     def addWindow(self, win):
         """添加一个子窗口"""
-        super().addWindow(win, initialize=self.screen is not None)
+        if len(self.subWindows) == 0:
+            super().addWindow(win)
+        else:
+            self.subWindows[-1].addWindow(win)
 
     @staticmethod
     def initializeCurses(screen, getchTimeout):
@@ -64,7 +67,7 @@ class Terminal(AbstractWindow):
             curses.init_pair(12, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
     def cursesLoop(self, screen):
-        self.initializeCurses(screen, getchTimeout=20)
+        self.initializeCurses(screen, getchTimeout=10)
 
         # 关闭光标可见
         curses.curs_set(0)

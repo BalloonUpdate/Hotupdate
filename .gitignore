@@ -1,6 +1,8 @@
 .idea/
 target/
-/logs.txt
+logs.txt
+.run
+
 
 
 # Byte-compiled / optimized / DLL files
