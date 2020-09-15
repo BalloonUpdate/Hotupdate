@@ -50,12 +50,15 @@ def work2():
 
 def work():
     # 加载配置文件
-    settingsFile = File('settings.json')
+    settingsFile = File('updater.json')
 
     if not settingsFile.exists:
-        sfInMc = settingsFile.parent['.minecraft']['settings.json']
+        sfInMc = settingsFile.parent['.minecraft']['updater.json']
         if not sfInMc.exists:
-            msg = '找不到文件 settings.json,请检查是否存在于本程序旁边或者.minecraft文件夹里'
+            msg = '找不到文件 updater.json \n' \
+                  '请检查以下路径之一: \n' + \
+                  settingsFile.path + '\n' + \
+                  sfInMc.path
             ts.addWindow(DialogWindow(msg, lambda: exit(), '错误:无法加载配置文件'))
             return
         else:

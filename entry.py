@@ -1,7 +1,6 @@
 import json
 import platform
 import subprocess
-import sys
 from json.decoder import JSONDecodeError
 
 import requests
@@ -27,8 +26,8 @@ def downloadFileWithTQDM(Url: str, file: File):
     with tqdm(total=int(totalSize / 1024),
               dynamic_ncols=True,
               unit='kb',
-              desc=file.name,
-              bar_format="{l_bar}{bar} {n_fmt}/{total_fmt}Kb {rate_fmt}{postfix}"
+              # desc=file.name,
+              bar_format="{percentage:3.0f}% {bar} {n_fmt}/{total_fmt}Kb {rate_fmt}{postfix}"
               ) as pbar:
         for chunk in r.iter_content(chunk_size=chunkSize):
             f.write(chunk)
@@ -40,12 +39,15 @@ def downloadFileWithTQDM(Url: str, file: File):
 
 if __name__ == "__main__":
 
-    settingsFile = File('settings.json')
+    settingsFile = File('updater.json')
 
     if not settingsFile.exists:
-        sfInMc = settingsFile.parent['.minecraft']['settings.json']
+        sfInMc = settingsFile.parent['.minecraft']['updater.json']
         if not sfInMc.exists:
-            msg = '找不到文件 settings.json,请检查是否存在于本程序旁边或者.minecraft文件夹里'
+            msg = '找不到文件 updater.json \n' \
+                  '请检查以下路径之一: \n' + \
+                    settingsFile.path + '\n' + \
+                    sfInMc.path
             print(msg)
             input('任意键退出..')
         else:
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         response = requests.get(settings['url'] + 'update.php')
         info = response.json()
 
-        executable = File('.minecraft/updater.exe')
+        executable = File('.minecraft/updater.executable.bin')
 
         if not executable.exists or executable.sha1 != info['hash']:
             print('正在更新主程序..')
