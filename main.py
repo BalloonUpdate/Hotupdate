@@ -1,5 +1,4 @@
 import json
-import platform
 import random
 import subprocess
 import sys
@@ -8,47 +7,32 @@ import time
 from json.decoder import JSONDecodeError
 
 import requests
+from PyQt5.QtWidgets import QApplication
 
-from CursesLib.Terminal import Terminal
-from CursesLib.utils.ChineseSpace import smartStretch
-from CursesLib.window.DialogWindow import DialogWindow
-from CursesLib.window.ProcessListWindow import ProcessListWindow
-from CursesLib.window.component.CloseButton import CloseButton
-from CursesLib.window.component.WindowTitle import WindowTitle
-from File import File
-from terminal import setFont, setBuffer
-from work.BMode import BMode
-from work.AMode import AMode
+from qt import MyMainWindow
+from utils.File import File
+from workMode.AMode import AMode
+from workMode.BMode import BMode
 
 
 def checkURL(url: str):
     return url if url.endswith('/') else url + '/'
 
 
-class AList(ProcessListWindow):
-    def __init__(self):
-        super().__init__()
-
-        if not platform.platform().startswith('Windows-10'):
-            border = self.getComponent('border')
-            border.enable = False
-            # border.bgChar = curses.ACS_VLINE
-            border.markChar = '|'
-
-        self.addComponent("title", WindowTitle(smartStretch('更新列表')))
-        self.addComponent("close", CloseButton())
-
-
 def work2():
     try:
         work()
     except Exception as e:
-        ts.quit()
+        # ts.quit()
         print(e)
         raise e
 
 
 def work():
+    mainWindow.es_setShow.emit(True)
+    mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
+    time.sleep(0.2)  # 让窗口初始化
+
     # 加载配置文件
     settingsFile = File('updater.json')
 
@@ -59,7 +43,8 @@ def work():
                   '请检查以下路径之一: \n' + \
                   settingsFile.path + '\n' + \
                   sfInMc.path
-            ts.addWindow(DialogWindow(msg, lambda: exit(), '错误:无法加载配置文件'))
+            mainWindow.es_showMessageBox.emit(msg, '错误：无法加载配置文件')
+            mainWindow.es_setShow.emit(False)
             return
         else:
             settingsFile = sfInMc
@@ -74,18 +59,25 @@ def work():
         response = requests.get(settings['url'])
         infojson = response.json()
     except requests.exceptions.ConnectionError as e:
-        ts.addWindow(DialogWindow('请求失败,连接错误: \n'+str(e), lambda: exit()))
+        mainWindow.es_showMessageBox.emit(str(e), '请求失败')
+        mainWindow.es_setShow.emit(False)
         return
     except JSONDecodeError as e:
-        text = '服务器返回了无法解码的信息:\n'
-        text += '访问的URL: '+response.url+'\n'
+        text = '访问的URL: '+response.url+'\n'
         text += 'HTTP CODE: '+str(response.status_code)+'\n\n'
-        text += '原始数据:\n'+response.text
-        ts.addWindow(DialogWindow(text, lambda: exit()))
+        text += '原始数据:\n'+response.text[:200] + ('\n...' if len(response.text) > 200 else '')
+
+        mainWindow.es_showMessageBox.emit(text, '服务器返回了无法解码的信息')
+        mainWindow.es_setShow.emit(False)
         return
 
     # 计算要修改的文件
-    al.getComponent('title').title = smartStretch('正在计算目录')
+
+    mainWindow.es_setWindowTitle.emit('正在计算目录')
+    mainWindow.es_setProgressStatus.emit(1)
+    mainWindow.es_setProgressVisible.emit(True)
+    mainWindow.es_setProgressRange.emit(0, 0)
+    mainWindow.es_setProgressValue.emit(0)
 
     td = File(infojson['RelativePath'])
     td.mkdirs()
@@ -101,40 +93,50 @@ def work():
     # print('----------')
     # print('\n'.join(hl.downloadList))
 
+    mainWindow.es_setWindowTitle.emit('正在加载列表..')
+    mainWindow.es_setProgressStatus.emit(2)
+
     for p in hl.deleteList:
-        al.addItem(p, '删除文件 ' + p, 0.0, None)
+        mainWindow.es_addItem.emit(p, '等待删除: '+p)
+        # al.addItem(p, '删除文件 ' + p, 0.0, None)
 
     for p in hl.downloadList:
-        al.addItem(p, '等待下载 ' + p, 0.0, None)
+        mainWindow.es_addItem.emit(p, '等待下载: '+p)
+        # al.addItem(p, '等待下载 ' + p, 0.0, None)
 
-    al.getComponent('title').title = smartStretch('正在下载新的文件 ')
+    mainWindow.es_setProgressStatus.emit(0)
+    mainWindow.es_setWindowTitle.emit('正在删除旧文件')
 
-    if al.hiddenLines != 0:
-        al.getComponent('title').title += smartStretch(' (鼠标滚轮可以滑动列表)')
+    totalKBytes = 0
+    for path, length in hl.downloadMap.items():
+        totalKBytes += length
+    mainWindow.es_setProgressRange.emit(0, 1000)
 
+    totalToDelete = len(hl.deleteList)
+    deletedCount = 0
     for p in hl.deleteList:
+        print('正在删除文件: '+p)
+        deletedCount += 1
+        mainWindow.es_setProgressValue.emit(1000 - int(deletedCount / totalToDelete * 1000))
         td.append(p).delete()
-        # al.removeItem(p)
-        al.getItem(p)[2] = -1
+        mainWindow.es_setItemText.emit(p, '已删除: '+p, True)
+        time.sleep(0.02 + random.random()*0.03)
 
-        if al.viewFollow:
-            al.lookAtItem(p)
-        else:
-            al.drawAFrame()
-        time.sleep(0.03 + random.random()*0.05)
-
-    def downloadFile2(url: str, file: File, relPath: str):
+    def downloadFile2(url: str, file: File, relPath: str, _downloadedBytes):
         r = requests.get(url, stream=True)
+
+        print('正在下载文件: ' + url)
 
         if r.status_code != 200:
             text2 = '下载 '+relPath+' 时出现了错误,服务器没有按预期返回200:\n'
             text2 += '原始URL: '+url+'\n'
             text2 += "HTTP CODE: " + str(r.status_code) + '\n'
-            ts.addWindow(DialogWindow(text2, lambda: exit()))
-            raise AssertionError
+            mainWindow.es_showMessageBox.emit(text2, '服务器没有按预期返回200')
+            mainWindow.es_setShow.emit(False)
+            assert False, text2
 
         totalSize = int(r.headers.get("Content-Length"))
-        chunkSize = 1024
+        chunkSize = 1024 * 64
         received = 0
 
         file.makeParentDirs()
@@ -147,41 +149,37 @@ def work():
             for chunk in r.iter_content(chunk_size=chunkSize):
                 f.write(chunk)
                 received += len(chunk)
-                al.getItem(p)[1] = format(received / totalSize * 100, '.2f') + '% ' + p
-                al.getItem(p)[2] = received / totalSize
 
-                if al.viewFollow:
-                    al.lookAtItem(p)
-                else:
-                    al.drawAFrame()
+                _downloadedBytes[0] += len(chunk)
+                mainWindow.es_setProgressValue.emit(int(_downloadedBytes[0]/totalKBytes*1000))
+
+                progress = format(received / totalSize * 100, '.2f') + '% '
+                progress2 = "{:.1f}Kb / {:.1f}Kb".format(received/1024, totalSize/1024)
+                mainWindow.es_setItemText.emit(p, progress+' '+p, received == totalSize)
+                mainWindow.es_setWindowTitle.emit('正在下载新文件 ' + progress2)
 
         except BaseException as e:
             text3 = '与服务器的连接意外中断:\n'
             text3 += str(e.__repr__())+'\n'
-            ts.addWindow(DialogWindow(text3, lambda: exit()))
-            raise AssertionError
+            mainWindow.es_showMessageBox.emit(text3, '服务器没有按预期返回200')
+            mainWindow.es_setShow.emit(False)
+            assert False, text3
 
         if totalSize == 0:
-            al.getItem(p)[2] = 1
-            al.drawAFrame()
+
+            mainWindow.es_setItemText.emit(p, '100.00% '+p, True)
 
         f.close()
-        al.getItem(p)[1] = '下载完成 ' + p
 
-        if al.viewFollow:
-            al.lookAtItem(p)
-        else:
-            al.drawAFrame()
+    mainWindow.es_setWindowTitle.emit('正在下载新文件')
 
-    try:
-        for p in hl.downloadList:
-            file = td.append(p)
-            downloadFile2(settings['url'] + 'resources/' + p, file, p)
-    except AssertionError as e:
-        return
+    downloadedBytes = [0]
 
-    ts.addWindow(DialogWindow('没有需要更新的文件', lambda: exit()))
+    for p in hl.downloadList:
+        file = td.append(p)
+        downloadFile2(settings['url'] + 'resources/' + p, file, p, downloadedBytes)
 
+    mainWindow.es_setWindowTitle.emit('没有需要更新的文件')
     if getattr(sys, 'frozen', False):  # 被打包以后
         command = infojson['RunWhenExit']
 
@@ -189,28 +187,25 @@ def work():
             try:
                 subprocess.call(command, shell=True)
             except BaseException as e:
-                text = '执行RunWhenExit时发生了错误:\n'
-                text += '要执行的命令: '+command+'\n'
+                text = '要执行的命令: '+command+'\n'
                 text += str(e.__repr__())+'\n'
-                ts.addWindow(DialogWindow(text, lambda: exit()))
+                mainWindow.es_showMessageBox.emit(text, '执行RunWhenExit时发生了错误')
+                mainWindow.es_setShow.emit(False)
                 return
 
-    time.sleep(1.5)
-    ts.quit()
+    time.sleep(1)
+    mainWindow.es_setShow.emit(False)
+    print('工作线程退出')
+    app.quit()
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    mainWindow = MyMainWindow()
 
-    if sys.prefix == sys.base_prefix:  # 不在虚拟环境中
-        setFont()
-        setBuffer()
-
-    ts = Terminal()
-    al = AList()
-    al.getComponent('title').title = smartStretch('正在连接到服务器')
-
-    ts.addWindow(al)
-
-    threading.Thread(target=work2, daemon=True).start()
-
-    ts.mainLoop()
+    workThread = threading.Thread(target=work2, daemon=True)
+    workThread.start()
+    # workThread.join()
+    code = app.exec_()
+    print('主线程退出')
+    sys.exit(code)
