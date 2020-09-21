@@ -6,7 +6,7 @@ from json.decoder import JSONDecodeError
 import requests
 from tqdm import tqdm
 
-from File import File
+from utils.File import File
 
 
 def checkURL(Url: str):
