@@ -1,8 +1,8 @@
-from File import File
-from work.BaseMode import BaseMode
+from utils.File import File
+from workMode.BaseWorkMode import BaseWorkMode
 
 
-class BMode(BaseMode):
+class BMode(BaseWorkMode):
     """
     默认只同步存在于服务器的上的文件，服务器没有的文件不做任何变动
     如果指定了正则表达式，则会使用正则表达式进行删除

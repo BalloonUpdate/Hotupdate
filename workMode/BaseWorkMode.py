@@ -1,8 +1,7 @@
-import logging
 import re
 from abc import ABC, abstractmethod
 
-from File import File
+from utils.File import File
 
 # logging.basicConfig(filename='logs.txt', level=logging.INFO)
 #
@@ -11,12 +10,13 @@ from File import File
 #     logging.info(" " + text)
 
 
-class BaseMode(ABC):
+class BaseWorkMode(ABC):
     def __init__(self, basePath, regexes, regexesMode):
         super().__init__()
         self.basePath: File = basePath
         self.deleteList: list = []
         self.downloadList: list = []
+        self.downloadMap: dict = {}
         self.regexes: list = regexes
         self.regexesMode: bool = regexesMode  # True: AND mode, False: Or mode
 
@@ -39,9 +39,13 @@ class BaseMode(ABC):
                 if 'tree' in n:
                     self.download(n, dd)
                 else:
-                    self.downloadList.append(dd.relPath(self.basePath))
+                    relPath = dd.relPath(self.basePath)
+                    self.downloadList.append(relPath)
+                    self.downloadMap[relPath] = n['length']
         else:
-            self.downloadList.append(dir.relPath(self.basePath))
+            relPath = dir.relPath(self.basePath)
+            self.downloadList.append(relPath)
+            self.downloadMap[relPath] = node['length']
 
     def test(self, path) -> bool:
 

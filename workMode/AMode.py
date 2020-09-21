@@ -1,8 +1,8 @@
-from File import File
-from work.BaseMode import BaseMode
+from utils.File import File
+from workMode.BaseWorkMode import BaseWorkMode
 
 
-class AMode(BaseMode):
+class AMode(BaseWorkMode):
     """
     默认同步指定文件夹内的所有文件，
     如果指定了正则表达式，则会使用正则表达式进行进一步筛选
