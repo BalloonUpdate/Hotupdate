@@ -1,6 +1,6 @@
 import typing
 
-from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer, QEvent
 from PyQt5.QtGui import QFont, QShowEvent, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QMessageBox
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
@@ -10,7 +10,7 @@ class DP(QAbstractListModel):
     def __init__(self, *args1, **args2):
         super().__init__(*args1, **args2)
 
-        self.dataSet = []  # [path, display]
+        self.dataSet = []  # [path, display, isBold]
 
     def rowCount(self, parent: QModelIndex = ...) -> int:
         return len(self.dataSet)
@@ -22,12 +22,14 @@ class DP(QAbstractListModel):
             return item[1]
 
         if role == Qt.FontRole:
-            font = QFont()
-            font.setBold(True)
-            return font
+            item = self.dataSet[index.row()]
+            if item[2]:
+                font = QFont()
+                font.setBold(True)
+                return font
 
     def appendFile(self, filePath: str, display: str):
-        self.dataSet.append([filePath, display])
+        self.dataSet.append([filePath, display, False])
         self.notifyDataChanged()
         return self.rowCount() + 1
 
@@ -59,6 +61,7 @@ class MyMainWindow(QWidget):
     es_setShow = pyqtSignal(bool)
     es_addItem = pyqtSignal(str, str)
     es_setItemText = pyqtSignal(str, str, bool)
+    es_setItemBold = pyqtSignal(str, bool)
     es_setWindowTitle = pyqtSignal(str)
     es_setProgressStatus = pyqtSignal(int)
     es_setProgressRange = pyqtSignal(int, int)
@@ -69,6 +72,8 @@ class MyMainWindow(QWidget):
         super().__init__()
         self.taskbarButton: QWinTaskbarButton = None
         self.taskbarProgress: QWinTaskbarProgress = None
+        self.showTaskbarProgress = False
+        self.lastTaskbarProgressRange = [0, 0]
 
         self.resize(480, 350)
         self.setWindowTitle('simple')
@@ -96,6 +101,7 @@ class MyMainWindow(QWidget):
         self.es_setProgressRange.connect(self._setProgressRange)
         self.es_setProgressValue.connect(self._setProgressValue)
         self.es_setProgressVisible.connect(self._setProgressVisible)
+        self.es_setItemBold.connect(self._setItemBold)
 
     def _showMessageBox(self, message, title):
         msgBox = QMessageBox()
@@ -108,12 +114,16 @@ class MyMainWindow(QWidget):
 
     def _addItem(self, path: str, display: str):
         index = self.model.appendFile(path, display)
-        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+4), 0))
+        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
 
     def _setItemText(self, path: str, display: str, lookAt: bool):
         index = self.model.setItemText(path, display)
         if lookAt:
-            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+4), 0))
+            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
+
+    def _setItemBold(self, path: str, isBold: bool):
+        index = self.model.findFile(path)
+        self.model.dataSet[index][2] = isBold
 
     def _setWindowTitle(self, text: str):
         self.setWindowTitle(text)
@@ -128,12 +138,14 @@ class MyMainWindow(QWidget):
 
     def _setProgressRange(self, minimum, maximum):
         self.taskbarProgress.setRange(minimum, maximum)
+        self.lastTaskbarProgressRange = [minimum, maximum]
 
     def _setProgressValue(self, value):
         self.taskbarProgress.setValue(value)
 
     def _setProgressVisible(self, visible):
         self.taskbarProgress.setVisible(visible)
+        self.showTaskbarProgress = visible
 
     def showEvent(self, event: QShowEvent) -> None:
 
@@ -151,3 +163,19 @@ class MyMainWindow(QWidget):
         timer.setSingleShot(True)
         timer.timeout.connect(b)
         timer.start()
+
+    def changeEvent(self, e: QEvent) -> None:
+        if e.type() != QEvent.WindowStateChange:
+            return
+
+        if self.windowState() == Qt.WindowNoState:
+
+            def b():
+                self.taskbarProgress.setRange(*self.lastTaskbarProgressRange)
+                self.taskbarProgress.setVisible(True)
+
+            timer = QTimer(self)
+            timer.setInterval(50)
+            timer.setSingleShot(True)
+            timer.timeout.connect(b)
+            timer.start()
