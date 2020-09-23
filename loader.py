@@ -66,16 +66,18 @@ if __name__ == "__main__":
         executable = File('.minecraft/updater.executable.bin')
 
         if not executable.exists or executable.sha1 != info['hash']:
-            print('正在更新主程序..')
+            print('正在更新主程序文件..')
             executable.makeParentDirs()
             executable.delete()
             url = settings['url'] + info['filename']
             downloadFileWithTQDM(url, executable)
 
         if platform.platform().startswith('Windows'):
-            subprocess.call('start ' + executable.path, shell=True)
+            cli = 'cd "' + executable.parent.parent.path + '" && start ' + executable.parent.name + '\\' + executable.name
+            subprocess.call(cli, shell=True)
         else:
-            subprocess.call(executable.path, shell=True)
+            print('本程序仅支持Windows系统')
+            input('任意键退出..')
     except requests.exceptions.ConnectionError as e:
         print('请求失败,连接错误: \n' + str(e))
         input('任意键退出..')
