@@ -21,7 +21,7 @@ def downloadFileWithTQDM(Url: str, file: File):
     chunkSize = 1024
 
     file.makeParentDirs()
-    f = open(file.absPath, 'xb+')
+    f = open(file.path, 'xb+')
 
     with tqdm(total=int(totalSize / 1024),
               dynamic_ncols=True,
