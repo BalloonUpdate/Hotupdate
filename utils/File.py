@@ -12,9 +12,9 @@ class File:
             raise TypeError(f"the file path must be a string, not '{filePath}' ({type(filePath)})")
 
         if os.path.isabs(filePath):
-            self.absPath = os.path.abspath(filePath).replace("\\", "/")
+            self.__absPath = os.path.abspath(filePath).replace("\\", "/")
         else:
-            self.absPath = os.path.abspath(os.path.join(os.getcwd(), filePath)).replace("\\", "/")
+            self.__absPath = os.path.abspath(os.path.join(os.getcwd(), filePath)).replace("\\", "/")
 
     @property
     def isDirectory(self):
@@ -149,7 +149,7 @@ class File:
 
     @property
     def path(self):
-        return self.absPath.replace("\\", "/")
+        return self.__absPath.replace("\\", "/")
 
     def relPath(self, baseDir=None):
         if baseDir is None:

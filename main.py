@@ -1,9 +1,11 @@
 import json
+import os
 import random
 import subprocess
 import sys
 import threading
 import time
+import traceback
 from json.decoder import JSONDecodeError
 
 import requests
@@ -118,9 +120,9 @@ def calculateChanges(mode, rootDir, regexes, regexesMode, structure):
     mainWindow.es_setProgressStatus.emit(1)  # 设置为黄色模式
 
     if mode:
-        workMode = AMode(rootDir.absPath, regexes, regexesMode)
+        workMode = AMode(rootDir.path, regexes, regexesMode)
     else:
-        workMode = BMode(rootDir.absPath, regexes, regexesMode)
+        workMode = BMode(rootDir.path, regexes, regexesMode)
 
     # 开始计算
     workMode.scan(rootDir, structure)
@@ -170,61 +172,83 @@ def downloadNewFiles(workMode, rootDir, serverUrl):
 
 
 def work():
-    mainWindow.es_setShow.emit(True)
-    mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
+    try:
+        # time.sleep(0.5)
 
-    # 读取配置文件
-    serverUrl = readConfig()
+        mainWindow.es_setShow.emit(True)
+        mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
 
-    # 获取服务器的文件元数据
-    response = requestMetadata(serverUrl)
+        inDevelopment = not getattr(sys, 'frozen', False)
 
-    relativePath = response['RelativePath']
-    mode = response['Mode'] == 'A'
-    regexes = response['Regexes']
-    regexesMode = response['RegexesMode'] == "and"
-    structure = response['structure']
+        # 读取配置文件
+        serverUrl = readConfig()
 
-    # 更新文件夹的根目录
-    rootDir = File(relativePath)
-    rootDir.mkdirs()
+        # 获取服务器的文件元数据
+        response = requestMetadata(serverUrl)
 
-    # 计算修改的文件
-    workMode = calculateChanges(mode, rootDir, regexes, regexesMode, structure)
+        mode = response['ModeA']
+        regexes = response['Regexes']
+        regexesMode = response['MatchAllRegexes']
+        structure = response['structure']
 
-    # 加载进列表里
-    loadInList(workMode)
+        # 更新文件夹的根目录
+        rootDir = File('.') if not File('redirect').exists else File('./redirectDir')
+        rootDir.mkdirs()
 
-    # 删除旧文件
-    deleteOldFiles(workMode, rootDir)
+        if rootDir.name == 'redirectDir':
+            print('目标文件夹已被重定向到: '+rootDir.path)
+        else:
+            # 路径检测，以防止误删文件
+            if inDevelopment:
+                programDir = File(os.path.split(os.path.abspath(sys.argv[0]))[0])
+                if programDir.path == File('').path:
+                    print('请不要原地执行，请将本程序复制到其它位置后再cd回到这里再执行，否则很容易误删文件')
+                    return
 
-    # 下载新文件
-    downloadNewFiles(workMode, rootDir, serverUrl)
+        # 计算修改的文件
+        workMode = calculateChanges(mode, rootDir, regexes, regexesMode, structure)
 
-    # 结束工作
-    mainWindow.es_setWindowTitle.emit('没有需要更新的文件')
+        # 加载进列表里
+        loadInList(workMode)
 
-    # 如果被打包以后就执行一下'RunWhenExit'
-    if getattr(sys, 'frozen', False):
-        command = response['RunWhenExit']
-        if command != '':
-            try:
-                subprocess.call(command, shell=True)
-            except BaseException as e:
-                text = '要执行的命令: ' + command + '\n'
-                text += str(e.__repr__()) + '\n'
-                mainWindow.es_showMessageBox.emit(text, '执行RunWhenExit时发生了错误')
-                mainWindow.es_setShow.emit(False)
-                return
+        # 删除旧文件
+        deleteOldFiles(workMode, rootDir)
 
-    time.sleep(1)
-    mainWindow.es_setShow.emit(False)
-    app.quit()
+        # 下载新文件
+        downloadNewFiles(workMode, rootDir, serverUrl)
+
+        # 结束工作
+        mainWindow.es_setWindowTitle.emit('没有需要更新的文件')
+
+        # 如果被打包以后就执行一下'RunWhenExit'
+        if getattr(sys, 'frozen', False):
+            command = response['RunWhenExit']
+            if command != '':
+                try:
+                    subprocess.call(command, shell=True)
+                except BaseException as e:
+                    text = '要执行的命令: ' + command + '\n'
+                    text += str(e.__repr__()) + '\n'
+                    mainWindow.es_showMessageBox.emit(text, '执行RunWhenExit时发生了错误')
+                    mainWindow.es_setShow.emit(False)
+                    return
+
+        time.sleep(1)
+        mainWindow.es_setShow.emit(False)
+
+    except BaseException as e:
+        if not isinstance(e, AssertionError):
+            text = '异常详情: \n'
+            text += str(traceback.format_exc())
+            mainWindow.es_showMessageBox.emit(text, '发生了未知异常')
+            mainWindow.es_setShow.emit(False)
+    finally:
+        app.quit()
+        print('工作线程退出')
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    time.sleep(0.2)
     mainWindow = MyMainWindow()
 
     workThread = threading.Thread(target=work, daemon=True)
