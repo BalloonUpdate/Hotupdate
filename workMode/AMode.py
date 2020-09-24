@@ -23,7 +23,7 @@ class AMode(BaseWorkMode):
         for t in tree:
             d = dir.append(t['name'])
 
-            self.debug(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
+            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
 
             if not self.test(d.relPath(base)):
                 continue
@@ -52,7 +52,7 @@ class AMode(BaseWorkMode):
         for d in dir:
             t = AMode.getNameInTree(d.name, tree)  # 尝试反向获取对应的文件信息
 
-            self.debug(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
+            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
 
             if not self.test(d.relPath(base)):
                 continue
@@ -67,3 +67,4 @@ class AMode(BaseWorkMode):
     def scan(self, dir: File, tree: list):
         self.PScan(dir, tree, dir)
         self.NScan(dir, tree, dir)
+        self.excludeSelf()

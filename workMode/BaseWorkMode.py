@@ -1,13 +1,8 @@
 import re
+import sys
 from abc import ABC, abstractmethod
 
 from utils.File import File
-
-# logging.basicConfig(filename='logs.txt', level=logging.INFO)
-#
-#
-# def log2(text):
-#     logging.info(" " + text)
 
 
 class BaseWorkMode(ABC):
@@ -20,15 +15,14 @@ class BaseWorkMode(ABC):
         self.regexes: list = regexes
         self.regexesMode: bool = regexesMode  # True: AND mode, False: Or mode
 
-    def delete(self, dir: File):
-
-        if dir.isDirectory:
-            for f in dir:
+    def delete(self, file: File):
+        if file.isDirectory:
+            for f in file:
                 if 'tree' in f:
                     self.delete(f)
                 else:
                     self.deleteList.append(f.relPath(self.basePath))
-        self.deleteList.append(dir.relPath(self.basePath))
+        self.deleteList.append(file.relPath(self.basePath))
 
     def download(self, node: dict, dir: File):
         if 'tree' in node:
@@ -47,10 +41,13 @@ class BaseWorkMode(ABC):
             self.downloadList.append(relPath)
             self.downloadMap[relPath] = node['length']
 
-    def test(self, path) -> bool:
+    def test(self, path: str) -> bool:
 
         if len(self.regexes) == 0:
-            return True
+            return False
+
+        if path == self.getSelf():
+            return False
 
         results = [
             re.match(reg, path) is not None
@@ -67,10 +64,23 @@ class BaseWorkMode(ABC):
 
         return result
 
+    def getSelf(self):
+        return File(sys.executable).relPath(self.basePath)
+
+    def getSelfParent(self):
+        return File(sys.executable).parent.relPath(self.basePath)
+
+    def excludeSelf(self):
+        if self.getSelf() in self.downloadList:
+            self.downloadList.remove(self.getSelf())
+
+        if self.getSelf() in self.deleteList:
+            self.deleteList.remove(self.getSelf())
+
+        if self.getSelfParent() in self.deleteList:
+            self.deleteList.remove(self.getSelfParent())
+
     @abstractmethod
     def scan(self, dir: File, tree: list):
         pass
 
-    def debug(self, text):
-        # log2(str(self.__class__) + ": " + text)
-        pass

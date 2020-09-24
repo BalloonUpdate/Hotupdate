@@ -13,9 +13,9 @@ class BMode(BaseWorkMode):
     def walk(self, dir: File, tree: list, base: File):
 
         for d in dir:
-            self.debug(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
+            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
 
-            if self.test(d.relPath(base)) and len(self.regexes) != 0:
+            if self.test(d.relPath(base)):
                 self.delete(d)
                 continue
 
@@ -24,19 +24,14 @@ class BMode(BaseWorkMode):
 
             if d.exists:
                 if 'tree' not in t:  # 是文件
-                    # if t['length'] == -1:  # 需要删除
-                    #     self.delete(d)
-                    # else:
                     if d.sha1 != t['hash']:
                         self.delete(d)
                         self.download(t, d)
                 else:  # 是文件夹
-                    # if 'length' in t:  # 需要删除整个文件夹
-                    #     self.delete(d)
-                    # else:
                     self.walk(d, t['tree'], base)
             else:
                 self.download(t, d)
 
     def scan(self, dir: File, tree: list):
         self.walk(dir, tree, dir)
+        self.excludeSelf()
