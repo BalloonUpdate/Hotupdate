@@ -5,6 +5,7 @@ logs.txt
 *temptemp/
 .minecraft/
 updater.json
+redirect
 
 
 # Byte-compiled / optimized / DLL files
