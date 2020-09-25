@@ -59,6 +59,7 @@ class MyMainWindow(QWidget):
 
     es_showMessageBox = pyqtSignal(str, str)
     es_setShow = pyqtSignal(bool)
+    es_close = pyqtSignal()
     es_addItem = pyqtSignal(str, str)
     es_setItemText = pyqtSignal(str, str, bool)
     es_setItemBold = pyqtSignal(str, bool)
@@ -102,6 +103,7 @@ class MyMainWindow(QWidget):
         self.es_setProgressValue.connect(self._setProgressValue)
         self.es_setProgressVisible.connect(self._setProgressVisible)
         self.es_setItemBold.connect(self._setItemBold)
+        self.es_close.connect(self._close)
 
     def _showMessageBox(self, message, title):
         msgBox = QMessageBox()
@@ -146,6 +148,9 @@ class MyMainWindow(QWidget):
     def _setProgressVisible(self, visible):
         self.taskbarProgress.setVisible(visible)
         self.showTaskbarProgress = visible
+
+    def _close(self):
+        self.close()
 
     def showEvent(self, event: QShowEvent) -> None:
 

@@ -26,7 +26,7 @@ def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes):
         text2 += '原始URL: ' + url + '\n'
         text2 += "HTTP CODE: " + str(r.status_code) + '\n'
         mainWindow.es_showMessageBox.emit(text2, '服务器没有按预期返回200')
-        mainWindow.es_setShow.emit(False)
+        mainWindow.es_close.emit()
         assert False, text2
 
     totalSize = int(r.headers.get("Content-Length"))
@@ -57,7 +57,7 @@ def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes):
         text3 = '与服务器的连接意外中断:\n'
         text3 += str(e.__repr__()) + '\n'
         mainWindow.es_showMessageBox.emit(text3, '服务器没有按预期返回200')
-        mainWindow.es_setShow.emit(False)
+        mainWindow.es_close.emit()
         assert False, text3
 
     if totalSize == 0:
@@ -78,8 +78,9 @@ def readConfig():
             msg = '找不到文件 updater.json，请检查以下路径之一: \n' + \
                   settingsFile.path + '\n' + \
                   settingsFile_mc.path
+            print(msg)
             mainWindow.es_showMessageBox.emit(msg, '错误：无法加载配置文件')
-            mainWindow.es_setShow.emit(False)
+            mainWindow.es_close.emit()
             assert False, msg
 
     def checkURL(url: str):
@@ -97,7 +98,7 @@ def requestMetadata(url: str):
         data = response.json()
     except requests.exceptions.ConnectionError as e:
         mainWindow.es_showMessageBox.emit(str(e), '请求失败')
-        mainWindow.es_setShow.emit(False)
+        mainWindow.es_close.emit()
         assert False, '请求失败' + str(e)
     except JSONDecodeError as e:
         text = '访问的URL: ' + response.url + '\n'
@@ -105,7 +106,7 @@ def requestMetadata(url: str):
         text += '原始数据:\n' + response.text[:200] + ('\n...' if len(response.text) > 200 else '')
 
         mainWindow.es_showMessageBox.emit(text, '服务器返回了无法解码的信息')
-        mainWindow.es_setShow.emit(False)
+        mainWindow.es_close.emit()
         assert False, '服务器返回了无法解码的信息' + text
 
     return data
@@ -173,8 +174,6 @@ def downloadNewFiles(workMode, rootDir, serverUrl):
 
 def work():
     try:
-        # time.sleep(0.5)
-
         mainWindow.es_setShow.emit(True)
         mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
 
@@ -189,6 +188,7 @@ def work():
         mode = response['ModeA']
         regexes = response['Regexes']
         regexesMode = response['MatchAllRegexes']
+        command = response['RunWhenExit']
         structure = response['structure']
 
         # 更新文件夹的根目录
@@ -220,30 +220,21 @@ def work():
         # 结束工作
         mainWindow.es_setWindowTitle.emit('没有需要更新的文件')
 
-        # 如果被打包以后就执行一下'RunWhenExit'
-        if getattr(sys, 'frozen', False):
-            command = response['RunWhenExit']
-            if command != '':
-                try:
-                    subprocess.call(command, shell=True)
-                except BaseException as e:
-                    text = '要执行的命令: ' + command + '\n'
-                    text += str(e.__repr__()) + '\n'
-                    mainWindow.es_showMessageBox.emit(text, '执行RunWhenExit时发生了错误')
-                    mainWindow.es_setShow.emit(False)
-                    return
+        # 如果被打包就执行一下'RunWhenExit'
+        if getattr(sys, 'frozen', False) and command != '':
+            subprocess.call(command, shell=True)
 
         time.sleep(1)
-        mainWindow.es_setShow.emit(False)
+        mainWindow.es_close.emit()
 
     except BaseException as e:
         if not isinstance(e, AssertionError):
             text = '异常详情: \n'
             text += str(traceback.format_exc())
+            print(text)
             mainWindow.es_showMessageBox.emit(text, '发生了未知异常')
-            mainWindow.es_setShow.emit(False)
+            mainWindow.es_close.emit()
     finally:
-        app.quit()
         print('工作线程退出')
 
 
@@ -254,5 +245,4 @@ if __name__ == "__main__":
     workThread = threading.Thread(target=work, daemon=True)
     workThread.start()
 
-    code = app.exec_()
-    sys.exit(code)
+    sys.exit(app.exec_())
