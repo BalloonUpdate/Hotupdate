@@ -1,7 +1,5 @@
 @echo off
-if "%1"=="" (
-	echo main file is not given!
-) else (
-    pyinstaller -F -c -n %2 %1
-    echo Build finished!
-)
+pyinstaller -F -c -n updater.exe loader.py
+pyinstaller -F -w -n main main.py
+echo Build finished!
+
