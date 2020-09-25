@@ -12,6 +12,7 @@ class BMode(BaseWorkMode):
 
     def walk(self, dir: File, tree: list, base: File):
 
+        # 计算出要删除的文件
         for d in dir:
             # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
 
@@ -19,8 +20,13 @@ class BMode(BaseWorkMode):
                 self.delete(d)
                 continue
 
+        # 计算出要更新的文件
         for t in tree:
             d = dir.append(t['name'])
+
+            # 如果是属于要删除的文件就不进行下载了
+            if self.test(d.relPath(base)):
+                continue
 
             if d.exists:
                 if 'tree' not in t:  # 是文件

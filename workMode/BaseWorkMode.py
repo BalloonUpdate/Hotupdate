@@ -46,9 +46,6 @@ class BaseWorkMode(ABC):
         if len(self.regexes) == 0:
             return False
 
-        if path == self.getSelf():
-            return False
-
         results = [
             re.match(reg, path) is not None
             for reg in self.regexes
@@ -64,23 +61,19 @@ class BaseWorkMode(ABC):
 
         return result
 
-    def getSelf(self):
-        return File(sys.executable).relPath(self.basePath)
-
-    def getSelfParent(self):
-        return File(sys.executable).parent.relPath(self.basePath)
-
     def excludeSelf(self):
-        if self.getSelf() in self.downloadList:
-            self.downloadList.remove(self.getSelf())
+        selfExe = File(sys.executable).relPath(self.basePath)
+        selfExeParent = File(sys.executable).parent.relPath(self.basePath)
 
-        if self.getSelf() in self.deleteList:
-            self.deleteList.remove(self.getSelf())
+        if selfExe in self.downloadList:
+            self.downloadList.remove(selfExe)
 
-        if self.getSelfParent() in self.deleteList:
-            self.deleteList.remove(self.getSelfParent())
+        if selfExe in self.deleteList:
+            self.deleteList.remove(selfExe)
+
+        if selfExeParent in self.deleteList:
+            self.deleteList.remove(selfExeParent)
 
     @abstractmethod
     def scan(self, dir: File, tree: list):
         pass
-
