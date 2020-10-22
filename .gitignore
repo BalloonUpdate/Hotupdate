@@ -6,6 +6,7 @@ logs.txt
 .minecraft/
 updater.json
 redirect
+redirected-dir/
 
 
 # Byte-compiled / optimized / DLL files
