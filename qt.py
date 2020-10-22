@@ -2,7 +2,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer, QEvent
 from PyQt5.QtGui import QFont, QShowEvent, QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QMessageBox, QApplication
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
 
@@ -64,6 +64,9 @@ class MyMainWindow(QWidget):
     es_setItemText = pyqtSignal(str, str, bool)
     es_setItemBold = pyqtSignal(str, bool)
     es_setWindowTitle = pyqtSignal(str)
+    es_setWindowWidth = pyqtSignal(int)
+    es_setWindowHeight = pyqtSignal(int)
+    es_setWindowCenter = pyqtSignal()
     es_setProgressStatus = pyqtSignal(int)
     es_setProgressRange = pyqtSignal(int, int)
     es_setProgressValue = pyqtSignal(int)
@@ -98,6 +101,9 @@ class MyMainWindow(QWidget):
         self.es_addItem.connect(self._addItem)
         self.es_setItemText.connect(self._setItemText)
         self.es_setWindowTitle.connect(self._setWindowTitle)
+        self.es_setWindowWidth.connect(self._setWindowWidth)
+        self.es_setWindowHeight.connect(self._setWindowHeight)
+        self.es_setWindowCenter.connect(self._setWindowCenter)
         self.es_setProgressStatus.connect(self._setProgressStatus)
         self.es_setProgressRange.connect(self._setProgressRange)
         self.es_setProgressValue.connect(self._setProgressValue)
@@ -129,6 +135,20 @@ class MyMainWindow(QWidget):
 
     def _setWindowTitle(self, text: str):
         self.setWindowTitle(text)
+
+    def _setWindowWidth(self, width: int):
+        size = self.size()
+        size.setWidth(width)
+        self.resize(size)
+
+    def _setWindowHeight(self, height: int):
+        size = self.size()
+        size.setHeight(height)
+        self.resize(size)
+
+    def _setWindowCenter(self):
+        desktop = QApplication.desktop()
+        self.move((desktop.width() - self.width()) / 2, (desktop.height() - self.height()) / 2)
 
     def _setProgressStatus(self, status: int):
         if status == 0:

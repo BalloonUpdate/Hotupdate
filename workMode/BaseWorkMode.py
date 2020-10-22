@@ -26,6 +26,8 @@ class BaseWorkMode(ABC):
 
     def download(self, node: dict, dir: File):
         if 'tree' in node:
+            # 提前创建文件夹（即使是空文件夹）
+            dir.append(node['name']).makeParentDirs()
 
             for n in node['tree']:
                 dd = dir.append(n['name'])
@@ -42,6 +44,10 @@ class BaseWorkMode(ABC):
             self.downloadMap[relPath] = node['length']
 
     def test(self, path: str) -> bool:
+        """测试指定的目录是否能通过正则表达式的匹配
+        :param path: 需要测试的相对路径字符串
+        :return: 是否通过了匹配
+        """
 
         if len(self.regexes) == 0:
             return False
@@ -62,6 +68,7 @@ class BaseWorkMode(ABC):
         return result
 
     def excludeSelf(self):
+        """将可执行文件本身给排除掉，主要用于打包以后的防误删机制"""
         selfExe = File(sys.executable).relPath(self.basePath)
         selfExeParent = File(sys.executable).parent.relPath(self.basePath)
 

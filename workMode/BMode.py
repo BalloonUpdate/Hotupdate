@@ -14,8 +14,6 @@ class BMode(BaseWorkMode):
 
         # 计算出要删除的文件
         for d in dir:
-            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
-
             if self.test(d.relPath(base)):
                 self.delete(d)
                 continue
@@ -23,17 +21,18 @@ class BMode(BaseWorkMode):
         # 计算出要更新的文件
         for t in tree:
             d = dir.append(t['name'])
+            dPath = d.relPath(base)
 
             # 如果是属于要删除的文件就不进行下载了
-            if self.test(d.relPath(base)):
+            if self.test(dPath):
                 continue
 
             if d.exists:
-                if 'tree' not in t:  # 是文件
+                if 'tree' not in t:  # 远端是一个文件
                     if d.sha1 != t['hash']:
                         self.delete(d)
                         self.download(t, d)
-                else:  # 是文件夹
+                else:  # 远端是一个目录
                     self.walk(d, t['tree'], base)
             else:
                 self.download(t, d)

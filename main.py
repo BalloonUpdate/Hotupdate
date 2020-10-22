@@ -17,9 +17,11 @@ from workMode.AMode import AMode
 from workMode.BMode import BMode
 
 
-def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes):
+def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes, expectantLength):
     p = relPath
     r = requests.get(url, stream=True)
+
+    print('正在下载: ' + p)
 
     if r.status_code != 200:
         text2 = '下载 ' + relPath + ' 时出现了错误,服务器没有按预期返回200:\n'
@@ -29,7 +31,9 @@ def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes):
         mainWindow.es_close.emit()
         assert False, text2
 
-    totalSize = int(r.headers.get("Content-Length"))
+    includeContentLength = 'Content-Length' in r.headers
+
+    totalSize = int(r.headers.get("Content-Length")) if includeContentLength else expectantLength
     chunkSize = 1024 * 64
     received = 0
 
@@ -66,7 +70,7 @@ def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes):
     f.close()
 
 
-def readConfig():
+def findConfigFile():
     # 加载配置文件
     settingsFile = File('updater.json')
     settingsFile_mc = File('.minecraft/updater.json')
@@ -83,10 +87,7 @@ def readConfig():
             mainWindow.es_close.emit()
             assert False, msg
 
-    def checkURL(url: str):
-        return url if url.endswith('/') else url + '/'
-
-    return checkURL(json.loads(settingsFile.content)['url'])
+    return settingsFile
 
 
 def requestMetadata(url: str):
@@ -169,33 +170,65 @@ def downloadNewFiles(workMode, rootDir, serverUrl):
     for p in workMode.downloadList:
         file = rootDir.append(p)
         mainWindow.es_setItemBold.emit(p, True)
-        downloadFile2(serverUrl + 'resources/' + p, file, p, downloadedBytes, totalKBytes)
+        downloadFile2(serverUrl + 'resources/' + p, file, p, downloadedBytes, totalKBytes, workMode.downloadMap[p])
 
 
 def work():
     try:
-        mainWindow.es_setShow.emit(True)
-        mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
-
         inDevelopment = not getattr(sys, 'frozen', False)
 
         # 读取配置文件
-        serverUrl = readConfig()
+        configFile = findConfigFile()
+        configObj = json.loads(configFile.content)
 
-        # 获取服务器的文件元数据
+        if 'url' in configObj:
+            configObj = {
+                "url": configObj['url'],
+                "Client": {
+                    "VisibleTime": 1500,
+                    "Width": 480,
+                    "Height": 350
+                }
+            }
+
+        serverUrl = configObj['url']
+        serverUrl = serverUrl if serverUrl.endswith('/') else serverUrl + '/'
+        uiWidth = configObj['Client']['Width']
+        uiHeight = configObj['Client']['Height']
+
+        # 初始化窗口
+        mainWindow.es_setWindowWidth.emit(uiWidth)
+        mainWindow.es_setWindowHeight.emit(uiHeight)
+        mainWindow.es_setWindowCenter.emit()  # 居中
+        mainWindow.es_setShow.emit(True)
+        mainWindow.es_setWindowTitle.emit('正在连接到服务器..')
+
+        # 从服务器获取数据
         response = requestMetadata(serverUrl)
 
-        mode = response['ModeA']
-        regexes = response['Regexes']
-        regexesMode = response['MatchAllRegexes']
-        command = response['RunWhenExit']
-        structure = response['structure']
+        mode = response['Server']['ModeA']
+        regexes = response['Server']['Regexes']
+        regexesMode = response['Server']['MatchAllRegexes']
+        command = response['Server']['RunWhenExit']
+        structure = response['Server']['Structure']
+        visibleTime = response['Client']['VisibleTime']
+        windowWidth = response['Client']['Width']
+        windowHeight = response['Client']['Height']
+
+        # 保存UI数据
+        configObj['Client'] = response['Client']
+        configFile.content = json.dumps(configObj, ensure_ascii=False, indent=4)
+
+        # 再次设置窗口大小
+        mainWindow.es_setWindowWidth.emit(windowWidth)
+        mainWindow.es_setWindowHeight.emit(windowHeight)
+        mainWindow.es_setWindowCenter.emit()  # 居中
 
         # 更新文件夹的根目录
-        rootDir = File('.') if not File('redirect').exists else File('./redirectDir')
+        rootDir = File('.') if not File('redirect').exists else File('./redirected-dir')
         rootDir.mkdirs()
 
-        if rootDir.name == 'redirectDir':
+        if rootDir.name == 'redirected-dir':
             print('目标文件夹已被重定向到: '+rootDir.path)
         else:
             # 路径检测，以防止误删文件
@@ -224,8 +257,9 @@ def work():
         if getattr(sys, 'frozen', False) and command != '':
             subprocess.call(command, shell=True)
 
-        time.sleep(1)
-        mainWindow.es_close.emit()
+        if visibleTime >= 0:
+            time.sleep(visibleTime / 1000)
+            mainWindow.es_close.emit()
 
     except BaseException as e:
         if not isinstance(e, AssertionError):

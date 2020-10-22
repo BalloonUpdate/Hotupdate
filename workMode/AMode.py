@@ -12,59 +12,107 @@ class AMode(BaseWorkMode):
 
     @staticmethod
     def getNameInTree(_name: str, _tree: list):
+        """在一个远程目录对象里获取一个文件对象"""
         for n in _tree:
             if n['name'] == _name:
                 return n
         return None
 
-    def PScan(self, dir: File, tree: list, base: File):
-        """扫描新文件或者修改过的文件(不包括被删除的)"""
+    def checkSubFolder(self, t: dict, parent: str):
+        """检查指定路径是否有 路径可匹配的 子目录"""
+        thisPath = parent + ('/' if parent != '' else '') + t['name']
+
+        if 'tree' in t:
+            ret = False
+            for tt in t['tree']:
+                ret |= self.checkSubFolder(tt, thisPath)
+            return ret
+        else:
+            ret = self.test(thisPath)
+            return ret
+
+    def checkSubFolder2(self, d: File, parent: str):
+        """检查指定路径是否有 路径可匹配的 子目录"""
+        thisPath = parent + ('/' if parent != '' else '') + d.name
+
+        if d.isDirectory:
+            ret = False
+            for dd in d:
+                ret |= self.checkSubFolder2(dd, thisPath)
+            return ret
+        else:
+            ret = self.test(thisPath)
+            return ret
+
+    def scanDownloadableFiles(self, dir: File, tree: list, base: File):
+        """只扫描需要下载的文件(不包括被删除的)
+        :param dir: 对应的本地目录对象
+        :param tree: 与本地目录对应的远程目录
+        :param base: 工作目录(更新根目录)，用于计算相对路径
+        """
 
         for t in tree:
             d = dir.append(t['name'])
+            dPath = d.relPath(base)
 
-            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
+            judgementA = self.test(dPath)
+            judgementB = self.checkSubFolder(t, '')
 
-            if not self.test(d.relPath(base)):
+            # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
+            if not judgementA and not judgementB:
                 continue
 
-            if not d.exists:  # 文件已经被删除了
+            if not d.exists:  # 文件不存在的话就不用校验直接进行下载
                 self.download(t, d)
-            else:  # 文件没有被删除
-                if 'tree' in t:  # 理应是一个文件夹
-                    if d.isFile:  # 实际却是一个文件
+            else:  # 文件存在的话要进行进一步判断
+                if 'tree' in t:  # 远程对象是一个目录
+                    if d.isFile:  # 本地对象是一个文件
+                        # 先删除本地的 文件 再下载远程端的 目录
                         self.delete(d)
                         self.download(t, d)
-                    else:  # 实际也是一个文件夹
-                        self.PScan(d, t['tree'], base)
-                else:  # 理应是一个文件
-                    if d.isFile:  # 实际也是一个文件
+                    else:  # 远程对象 和 本地对象 都是目录
+                        # 递归调用，进行进一步判断
+                        self.scanDownloadableFiles(d, t['tree'], base)
+                else:  # 远程对象是一个文件
+                    if d.isFile:  # 远程对象 和 本地对象 都是文件
+                        # 校验hash
                         if d.sha1 != t['hash']:
+                            # 如果hash对不上，删除后进行下载
                             self.delete(d)
                             self.download(t, d)
-                    else:  # 实际却是一个文件夹
+                    else:  # 本地对象是一个目录
+                        # 先删除本地的 目录 再下载远程端的 文件
                         self.delete(d)
                         self.download(t, d)
 
-    def NScan(self, dir: File, tree: list, base: File):
-        """扫描被删除的文件，不包括新文件或者修改过的文件，这类情况均由PScan()处理"""
+    def scanDeletableFiles(self, dir: File, tree: list, base: File):
+        """只扫描需要删除的文件
+        :param dir: 对应的本地目录对象
+        :param tree: 与本地目录对应的远程目录
+        :param base: 工作目录(更新根目录)，用于计算相对路径
+        """
 
         for d in dir:
-            t = AMode.getNameInTree(d.name, tree)  # 尝试反向获取对应的文件信息
+            t = AMode.getNameInTree(d.name, tree)  # 参数获取远程端的对应对象，可能会返回None
+            dPath = d.relPath(base)
 
-            # print(str(self.test(d.relPath(base))) + ': ' + d.relPath(base))
+            judgementA = self.test(dPath)
+            judgementB = self.checkSubFolder2(d, '')
 
-            if not self.test(d.relPath(base)):
+            # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
+            if not judgementA and not judgementB:
                 continue
 
-            if t is not None:  # 能获取到信息
+            if t is not None:  # 如果远程端也有这个文件
                 if d.isDirectory:
                     if 'tree' in t:
-                        self.NScan(d, t['tree'], base)
-            else:  # 获取不到
+                        # 如果 本地对象 和 远程对象 都是目录，递归调用进行进一步判断
+                        self.scanDeletableFiles(d, t['tree'], base)
+                # 其它情况均由scanDownloadableFiles进行处理了，这里不需要重复判断
+            else:  # 远程端没有有这个文件，就直接删掉好了
                 self.delete(d)
 
     def scan(self, dir: File, tree: list):
-        self.PScan(dir, tree, dir)
-        self.NScan(dir, tree, dir)
+        self.scanDownloadableFiles(dir, tree, dir)
+        self.scanDeletableFiles(dir, tree, dir)
         self.excludeSelf()
