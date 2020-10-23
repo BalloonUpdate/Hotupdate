@@ -1,7 +1,10 @@
+import base64
 import json
 import platform
 import subprocess
+from binascii import Error
 from json.decoder import JSONDecodeError
+from urllib.parse import unquote
 
 import requests
 from tqdm import tqdm
@@ -10,6 +13,11 @@ from utils.File import File
 
 
 def checkURL(Url: str):
+    try:
+        Url = unquote(base64.b64decode(Url, validate=True).decode('utf-8'), 'utf-8')
+    except Error:
+        Url = Url
+
     return Url if Url.endswith('/') else Url + '/'
 
 
@@ -54,7 +62,7 @@ if __name__ == "__main__":
             settingsFile = sfInMc
 
     settings = json.loads(settingsFile.content)
-    settings['url'] = checkURL(settings['url'])
+    settings['url'] = checkURL(settings['url'] if 'url' in settings else settings['URL'])
 
     response = None
     url = ''

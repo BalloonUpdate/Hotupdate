@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import random
@@ -6,7 +7,9 @@ import sys
 import threading
 import time
 import traceback
+from binascii import Error
 from json.decoder import JSONDecodeError
+from urllib.parse import unquote
 
 import requests
 from PyQt5.QtWidgets import QApplication
@@ -183,7 +186,7 @@ def work():
 
         if 'url' in configObj:
             configObj = {
-                "url": configObj['url'],
+                "URL": configObj['url'],
                 "Client": {
                     "VisibleTime": 1500,
                     "Width": 480,
@@ -191,7 +194,11 @@ def work():
                 }
             }
 
-        serverUrl = configObj['url']
+        try:
+            serverUrl = unquote(base64.b64decode(configObj['url'] if 'url' in configObj else configObj['URL'], validate=True).decode('utf-8'), 'utf-8')
+        except Error:
+            serverUrl = configObj['url'] if 'url' in configObj else configObj['URL']
+
         serverUrl = serverUrl if serverUrl.endswith('/') else serverUrl + '/'
         uiWidth = configObj['Client']['Width']
         uiHeight = configObj['Client']['Height']
