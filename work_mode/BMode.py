@@ -1,5 +1,5 @@
 from utils.File import File
-from workMode.BaseWorkMode import BaseWorkMode
+from work_mode.BaseWorkMode import BaseWorkMode
 
 
 class BMode(BaseWorkMode):

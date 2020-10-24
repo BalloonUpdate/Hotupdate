@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import QApplication
 
 from qt import MyMainWindow
 from utils.File import File
-from workMode.AMode import AMode
-from workMode.BMode import BMode
+from work_mode.AMode import AMode
+from work_mode.BMode import BMode
 
 
 def downloadFile2(url, file, relPath, downloadedBytes, totalKBytes, expectantLength):
