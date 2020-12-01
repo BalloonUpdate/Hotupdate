@@ -47,6 +47,8 @@ def downloadFileWithTQDM(Url: str, file: File):
 
 if __name__ == "__main__":
 
+    print('version: a1201')
+
     settingsFile = File('updater.json')
 
     if not settingsFile.exists:
