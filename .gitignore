@@ -7,7 +7,6 @@ logs.txt
 updater.json
 redirect
 redirected-dir/
-debug_*.cmd
 
 
 # Byte-compiled / optimized / DLL files
