@@ -18,17 +18,26 @@ class AMode(BaseWorkMode):
                 return n
         return None
 
-    def checkSubFolder(self, t: dict, parent: str):
+    def checkSubFolder(self, t: dict, parent: str, debug=''):
         """检查指定路径是否有 路径可匹配的 子目录"""
+        if parent == '.' or parent == './':
+            parent = ''
         thisPath = parent + ('/' if parent != '' else '') + t['name']
 
+        if parent == '':
+            print('进入特殊检测流程: parent:' + parent + '\n' + debug + '=> ', end='')
+        else:
+            print(debug + '- ', end='')
+
         if 'tree' in t:
+            print('多文件: ' + thisPath)
             ret = False
             for tt in t['tree']:
-                ret |= self.checkSubFolder(tt, thisPath)
+                ret |= self.checkSubFolder(tt, thisPath, debug + '    ')
             return ret
         else:
             ret = self.test(thisPath)
+            print('单文件: ' + thisPath + '       - ' + str(ret))
             return ret
 
     def checkSubFolder2(self, d: File, parent: str):
@@ -56,10 +65,13 @@ class AMode(BaseWorkMode):
             dPath = d.relPath(base)
 
             judgementA = self.test(dPath)
-            judgementB = self.checkSubFolder(t, '')
+            judgementB = self.checkSubFolder(t, dir.relPath(base))
+
+            print('文件检测结果: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not judgementA and not judgementB:
+                print('无法匹配: ' + str(t))
                 continue
 
             if not d.exists:  # 文件不存在的话就不用校验直接进行下载
