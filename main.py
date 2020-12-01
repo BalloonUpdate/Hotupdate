@@ -222,6 +222,11 @@ def work():
         windowWidth = response['Client']['Width']
         windowHeight = response['Client']['Height']
 
+        print('模式: '+'A' if mode else 'B')
+        print('规则: '+str(regexes))
+        print('全部匹配: '+str(regexesMode))
+        print('退出命令: '+command)
+
         # 保存UI数据
         configObj['Client'] = response['Client']
         configFile.content = json.dumps(configObj, ensure_ascii=False, indent=4)
@@ -280,6 +285,8 @@ def work():
 
 
 if __name__ == "__main__":
+    print('version: 1.2.2')
+
     app = QApplication(sys.argv)
     mainWindow = MyMainWindow()
 
