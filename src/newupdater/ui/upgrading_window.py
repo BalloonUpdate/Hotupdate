@@ -1,25 +1,26 @@
-import typing
+import sys
+import time
 
-from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer, QEvent
-from PyQt5.QtGui import QFont, QShowEvent, QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QMessageBox, QApplication
+from PyQt5.QtCore import QAbstractListModel, pyqtSignal, QModelIndex, QTimer, QEvent, Qt
+from PyQt5.QtGui import QFont, QShowEvent
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
+from src.newupdater.utils.logger import info
 
-class DP(QAbstractListModel):
+
+class UpgradingWindowDataSource(QAbstractListModel):
     def __init__(self, *args1, **args2):
         super().__init__(*args1, **args2)
 
-        self.dataSet = []  # [path, display, isBold]
+        self.dataSet = []  # [[path, display, isBold]]
 
     def rowCount(self, parent: QModelIndex = ...) -> int:
         return len(self.dataSet)
 
-    def data(self, index: QModelIndex, role: int = ...) -> typing.Any:
-
+    def data(self, index: QModelIndex, role: int = ...):
         if role == Qt.DisplayRole:
-            item = self.dataSet[index.row()]
-            return item[1]
+            return str(self.dataSet[index.row()][1])
 
         if role == Qt.FontRole:
             item = self.dataSet[index.row()]
@@ -31,7 +32,7 @@ class DP(QAbstractListModel):
     def appendFile(self, filePath: str, display: str):
         self.dataSet.append([filePath, display, False])
         self.notifyDataChanged()
-        return self.rowCount() + 1
+        return self.rowCount()
 
     def findFile(self, filePath: str) -> int:
         index = 0
@@ -55,8 +56,7 @@ class DP(QAbstractListModel):
         self.dataChanged.emit(start, end)
 
 
-class MyMainWindow(QWidget):
-
+class UpgradingWindow(QWidget):
     es_showMessageBox = pyqtSignal(str, str)
     es_setShow = pyqtSignal(bool)
     es_close = pyqtSignal()
@@ -79,13 +79,16 @@ class MyMainWindow(QWidget):
         self.showTaskbarProgress = False
         self.lastTaskbarProgressRange = [0, 0]
 
-        self.resize(480, 350)
-        self.setWindowTitle('simple')
+        self.resize(420, 300)
+        self.setWindowTitle('UpgradingWindow')
+
+        self.tasksDependOnWindow = []  # [func]
+        self.pendingTasks = []  # [[time, func]]
 
         vbox = QVBoxLayout()
 
         view = QListView()
-        model = DP()
+        model = UpgradingWindowDataSource()
 
         view.setModel(model)
 
@@ -111,6 +114,8 @@ class MyMainWindow(QWidget):
         self.es_setItemBold.connect(self._setItemBold)
         self.es_close.connect(self._close)
 
+        self.initializeTimer()
+
     def _showMessageBox(self, message, title):
         msgBox = QMessageBox()
         msgBox.setText(message)
@@ -122,12 +127,12 @@ class MyMainWindow(QWidget):
 
     def _addItem(self, path: str, display: str):
         index = self.model.appendFile(path, display)
-        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
+        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index + 6), 0))
 
     def _setItemText(self, path: str, display: str, lookAt: bool):
         index = self.model.setItemText(path, display)
         if lookAt:
-            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
+            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index + 6), 0))
 
     def _setItemBold(self, path: str, isBold: bool):
         index = self.model.findFile(path)
@@ -148,7 +153,7 @@ class MyMainWindow(QWidget):
 
     def _setWindowCenter(self):
         desktop = QApplication.desktop()
-        self.move((desktop.width() - self.width()) / 2, (desktop.height() - self.height()) / 2)
+        self.move(int((desktop.width() - self.width()) / 2), int((desktop.height() - self.height()) / 2))
 
     def _setProgressStatus(self, status: int):
         if status == 0:
@@ -183,18 +188,17 @@ class MyMainWindow(QWidget):
             self.taskbarButton = button
             self.taskbarProgress = progress
 
-        timer = QTimer(self)
-        timer.setInterval(5)
-        timer.setSingleShot(True)
-        timer.timeout.connect(b)
-        timer.start()
+            while len(self.tasksDependOnWindow) > 0:
+                task = self.tasksDependOnWindow.pop(0)
+                task()
+
+        self.delayExecuting(func=b, delay=5)
 
     def changeEvent(self, e: QEvent) -> None:
         if e.type() != QEvent.WindowStateChange:
             return
 
         if self.windowState() == Qt.WindowNoState:
-
             def b():
                 self.taskbarProgress.setRange(*self.lastTaskbarProgressRange)
                 self.taskbarProgress.setVisible(True)
@@ -204,3 +208,35 @@ class MyMainWindow(QWidget):
             timer.setSingleShot(True)
             timer.timeout.connect(b)
             timer.start()
+
+    def initializeTimer(self):
+        def ex():
+            now = int(time.time() * 1000)
+
+            expired = []
+            for i in range(0, len(self.pendingTasks)):
+                task = self.pendingTasks[i]
+                if now - task[0] >= 0:
+                    task[1]()
+                    expired.append(i)
+                    info('执行队列 ' + str(len(self.pendingTasks)))
+            for e in expired:
+                self.pendingTasks.pop(e)
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(5)
+        self.timer.timeout.connect(ex)
+        self.timer.start()
+        info('定时器已启动')
+
+    def delayExecuting(self, func, delay=5):
+        task = [int(time.time() * 1000) + delay, func]
+        self.pendingTasks.append(task)
+        info('添加任务')
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    updatingWindow = UpgradingWindow()
+    updatingWindow.es_setShow.emit(True)
+    sys.exit(app.exec_())

@@ -5,7 +5,7 @@ import hashlib
 import pathlib
 
 
-# 2020年8月25日13:56:15
+# 2020年12月14日17:41:06
 class File:
     def __init__(self, filePath):
         if not isinstance(filePath, str):
@@ -119,6 +119,7 @@ class File:
 
         if self.isFile:
             self.content = ""
+            return
 
         for pf in self.files:
             pf.delete()
@@ -150,6 +151,10 @@ class File:
     @property
     def path(self):
         return self.__absPath.replace("\\", "/")
+
+    @property
+    def windowsPath(self):
+        return self.__absPath.replace("/", "\\")
 
     def relPath(self, baseDir=None):
         if baseDir is None:
@@ -186,8 +191,7 @@ class File:
         with open(self.path, 'rb') as f:
             sha1obj = hashlib.sha1()
             sha1obj.update(f.read())
-            sha1 = sha1obj.hexdigest()
-            return sha1
+            return sha1obj.hexdigest()
 
     @property
     def createdTime(self):
@@ -218,6 +222,12 @@ class File:
             else:
                 raise StopIteration
 
+    def __call__(self, relPath):
+        if not isinstance(relPath, str):
+            raise TypeError(f"The key must be a string, not '{relPath}' ({type(relPath)})")
+
+        return self.append(relPath)
+
     def __contains__(self, item):
         return os.path.exists(self.append(item).path)
 
@@ -234,4 +244,4 @@ class File:
         return self.Iter(self)
 
     def __repr__(self):
-        return self.name
+        return str(__class__)+': '+self.name

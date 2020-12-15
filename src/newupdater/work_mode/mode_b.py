@@ -1,5 +1,5 @@
-from utils.File import File
-from work_mode.BaseWorkMode import BaseWorkMode
+from src.newupdater.utils.file import File
+from src.newupdater.work_mode.base_work_mode import BaseWorkMode
 
 
 class BMode(BaseWorkMode):

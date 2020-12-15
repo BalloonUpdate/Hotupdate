@@ -4,9 +4,7 @@ logs.txt
 .run
 *temptemp/
 .minecraft/
-updater.json
-redirect
-redirected-dir/
+debug-dir/
 
 
 # Byte-compiled / optimized / DLL files

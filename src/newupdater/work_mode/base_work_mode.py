@@ -2,7 +2,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 
-from utils.File import File
+from src.newupdater.utils.file import File
 
 
 class BaseWorkMode(ABC):
