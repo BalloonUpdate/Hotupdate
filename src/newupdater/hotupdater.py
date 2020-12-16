@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -28,7 +29,7 @@ class HotUpdateHelper:
 
     def compare(self, remoteFileStructure: list):
         comparer = FileComparer(self.hotupdate)
-        comparer.compare(self.hotupdate, remoteFileStructure)
+        comparer.compareWith(self.hotupdate, remoteFileStructure)
         return comparer
 
     def generateBatchStatements(self, comparer: FileComparer):
@@ -38,8 +39,8 @@ class HotUpdateHelper:
         batchText += 'ping -n 2 127.0.0.1 > nul \n'
 
         # 删除旧文件
-        batchText += f'echo 删除旧文件({len(comparer.deleteList)})\n'
-        for d in comparer.deleteList:
+        batchText += f'echo 删除旧文件({len(comparer.uselessFiles)})\n'
+        for d in comparer.uselessFiles:
             file = self.hotupdate[d]
             delCmd = 'del /F /S /Q ' if file.isFile else 'rmdir /S /Q '
             batchText += delCmd + '"' + file.windowsPath + '"\n'
@@ -48,7 +49,7 @@ class HotUpdateHelper:
         source = self.temporalDir.windowsPath + '\\*'
         destination = self.hotupdate.windowsPath + '\\'
 
-        batchText += f'echo 复制新文件({len(comparer.downloadList)})\n'
+        batchText += f'echo 复制新文件({len(comparer.missingFiles)})\n'
         batchText += f'xcopy /E /R /Y "{source}" "{destination}" \n'
         batchText += 'echo 清理临时目录\n'
         batchText += 'ping -n 1 127.0.0.1 > nul \n'
@@ -66,7 +67,7 @@ class HotUpdateHelper:
 
     def downloadFile(self, Url: str, file: File, progressCallback, total, downloaded, expectantLength):
         try:
-            r = requests.get(Url, stream=True)
+            r = requests.get(Url, stream=True, timeout=5)
             if r.status_code != 200:
                 raise UnexpectedHttpCodeError(Url, r.status_code, r.text)
 
@@ -92,14 +93,16 @@ class HotUpdateHelper:
         except requests.exceptions.ChunkedEncodingError as e:
             raise UnexpectedTransmissionError(e, Url)
 
-    def main(self, comparer: FileComparer):
+    def main(self, comparer:FileComparer, clientSettings):
         upgradingWindow = self.e.upgradingWindow
 
         # 生成热更新替换脚本
         batchText = self.generateBatchStatements(comparer)
         startupText = self.generateStartupCommand()
 
-        # 准备下载新文件
+        # 初始化窗口
+        upgradingWindow.es_setWindowWidth.emit(clientSettings['width'])
+        upgradingWindow.es_setWindowHeight.emit(clientSettings['height'])
         upgradingWindow.es_setShow.emit(True)
         # upgradingWindow.es_setProgressStatus.emit(1)
         # upgradingWindow.es_setProgressStatus.emit(0)
@@ -110,18 +113,23 @@ class HotUpdateHelper:
         upgradingWindow.es_setProgressRange.emit(0, 1000)
         upgradingWindow.es_setProgressValue.emit(1000)
 
+        # 创建缺失的目录
+        for mf in comparer.missingFolders:
+            self.workDir(mf).mkdirs()
+
         # 加载进列表里
-        for df in comparer.downloadList:
+        for df in comparer.missingFiles:
             upgradingWindow.es_addItem.emit(df, '等待下载 ' + df)
 
         # 计算总下载量
         totalKBytes = 0
         downloadedKByte = 0
-        for df in comparer.downloadMap.values():
-            totalKBytes += df
+        for df in comparer.missingFiles.values():
+            totalKBytes += df[0]
 
         # 下载新文件
-        for df in comparer.downloadList:
+        for k, v in comparer.missingFiles.items():
+            df = k
             url = self.e.upgradeSource + '/' + df
             file = self.temporalDir(df)
             info('下载: ' + file.name)
@@ -140,7 +148,7 @@ class HotUpdateHelper:
 
                 # info(t1 + ' ' + t2 + '  ' + df)
 
-            expectantLength = comparer.downloadMap[df]
+            expectantLength = v[0]
             downloadedKByte = self.downloadFile(url, file, progressCallback, totalKBytes, downloadedKByte, expectantLength)
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:

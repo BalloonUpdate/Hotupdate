@@ -1,102 +1,224 @@
+from functools import singledispatchmethod
+
 from src.newupdater.utils.file import File
+
+
+class SimpleFileObject:
+    def __init__(self, name: str, length: int = None, hash: str = None, children: list = None):
+        self.name = name
+        self.length = length
+        self.hash = hash
+        self.children = children
+
+        isFile = self.isFile
+        isDir = self.isDirectory
+        isValidFile = length is not None and hash is not None
+
+        if not isFile and not isDir:
+            assert False, f'unknown file type: the file type must be explicated by parameters ({self.name})'
+
+        if isFile and isDir:
+            assert False, f'inexplicit file/dir type: the file type must be either File or Directory ({self.name})'
+
+        if isFile and not isValidFile:
+            missingParameter = 'length' if length is None else 'hash'
+            assert False, f'missing necessary parameter: {missingParameter} ({self.name})'
+
+    @staticmethod
+    def FromDict(obj: dict):
+        if 'tree' in obj:
+            children = [SimpleFileObject.FromDict(f) for f in obj['tree']]
+            return SimpleFileObject(obj['name'], children=children)
+        else:
+            return SimpleFileObject(obj['name'], length=obj['length'], hash=obj['hash'])
+
+    @staticmethod
+    def FromFile(file: File):
+        if file.isDirectory:
+            children = [SimpleFileObject.FromFile(f) for f in file]
+            return SimpleFileObject(file.name, children=children)
+        else:
+            return SimpleFileObject(file.name, length=file.length, hash=file.sha1)
+
+    @property
+    def isDirectory(self):
+        return self.children is not None
+
+    @property
+    def isFile(self):
+        return self.length is not None or self.hash is not None
+
+    @property
+    def files(self):
+        if not self.isDirectory:
+            raise NotADirectoryError(f"'{self.name}' is not a Directory")
+        return self.children
+
+    @property
+    def sha1(self):
+        return self.hash
+
+    def getByName(self, name):
+        for child in self.children:
+            if child.name == name:
+                return child
+        return None
+
+    class Iter:
+        def __init__(self, obj):
+            self.files = obj.files
+            self.index = 0
+            self.end = len(self.files)
+
+        def __next__(self):
+            if self.index < self.end:
+                ret = self.files[self.index]
+                self.index += 1
+                return ret
+            else:
+                raise StopIteration
+
+    def __getitem__(self, name: str):
+        if not isinstance(name, str):
+            raise TypeError(f"The file must be a string, not '{name}' ({type(name)})")
+
+        if not self.__contains__(name):
+            raise FileNotFoundError(f"'{name}' is not found")
+
+        return self.getByName(name)
+
+    def __call__(self, relPath):
+        return self.__getitem__(relPath)
+
+    def __contains__(self, file: str):
+        if not isinstance(file, str):
+            raise TypeError(f"The key must be a string, not '{file}' ({type(file)})")
+
+        for subFile in self.children:
+            if subFile.name == file:
+                return True
+
+        return False
+
+    def __len__(self):
+        return len(self.children)
+
+    def __iter__(self):
+        return self.Iter(self)
 
 
 class FileComparer:
     def __init__(self, basePath):
         super().__init__()
-        self.basePath: File = basePath
-        self.deleteList: list = []
-        self.downloadList: list = []
-        self.downloadMap: dict = {}
+        self.basePath = basePath
+        self.uselessFiles = []
+        self.uselessFolders = []
+        self.missingFiles = {}
+        self.missingFolders = []
 
-    def scanDownloadableFiles(self, dir: File, tree: list, base: File):
-        """只扫描需要下载的文件(不包括被删除的)
-        :param dir: 对应的本地目录对象
-        :param tree: 与本地目录对应的远程目录
-        :param base: 工作目录(更新根目录)，用于计算相对路径
+    def findMissingFiles(self, current: File, template: SimpleFileObject):
+        """只扫描新增的文件(不包括被删除的)
+        :param current: 本地文件结构(目录)
+        :param template: 远程文件结构(目录)
         """
 
-        for file in tree:
-            corresponding = dir.append(file['name'])
-
-            if not corresponding.exists:  # 文件不存在的话就不用校验直接进行下载
-                self.download(file, corresponding)
+        for t in template:
+            if t.name not in current:  # 文件不存在
+                self.addMissingFile(current(t.name), t)
             else:  # 文件存在的话要进行进一步判断
-                if 'tree' in file:  # 远程对象是一个目录
-                    if corresponding.isFile:  # 本地对象是一个文件
-                        # 先删除本地的 文件 再下载远程端的 目录
-                        self.delete(corresponding)
-                        self.download(file, corresponding)
-                    else:  # 远程对象 和 本地对象 都是目录
-                        # 递归调用，进行进一步判断
-                        self.scanDownloadableFiles(corresponding, file['tree'], base)
-                else:  # 远程对象是一个文件
-                    if corresponding.isFile:  # 远程对象 和 本地对象 都是文件
-                        # 校验hash
-                        if corresponding.sha1 != file['hash']:
-                            # 如果hash对不上，删除后进行下载
-                            self.delete(corresponding)
-                            self.download(file, corresponding)
-                    else:  # 本地对象是一个目录
-                        # 先删除本地的 目录 再下载远程端的 文件
-                        self.delete(corresponding)
-                        self.download(file, corresponding)
+                corresponding = current(t.name)
 
-    def scanDeletableFiles(self, dir: File, tree: list, base: File):
+                if t.isDirectory:
+                    if corresponding.isFile:
+                        # 先删除旧的再获取新的
+                        self.addUselessFile(corresponding, current.relPath(self.basePath))
+                        self.addMissingFile(corresponding, t)
+                    else:
+                        self.findMissingFiles(corresponding, t)
+                else:
+                    if corresponding.isFile:
+                        if corresponding.hash != t.hash:  # 校验hash
+                            # 先删除旧的再获取新的
+                            self.addUselessFile(corresponding, current.relPath(self.basePath))
+                            self.addMissingFile(corresponding, t)
+                    else:
+                        # 先删除旧的再获取新的
+                        self.addUselessFile(corresponding, current.relPath(self.basePath))
+                        self.addMissingFile(corresponding, t)
+
+    def findUselessFiles(self, current: File, template: SimpleFileObject):
         """只扫描需要删除的文件
-        :param dir: 对应的本地目录对象
-        :param tree: 与本地目录对应的远程目录
-        :param base: 工作目录(更新根目录)，用于计算相对路径
+        :param current: 远程文件结构(目录)
+        :param template: 本地文件结构(目录)
         """
 
-        for file in dir:
-            corresponding = FileComparer.getNameInTree(file.name, tree)  # 参数获取远程端的对应对象，可能会返回None
+        for c in current:
+            if c.name in template:
+                corresponding = template(c.name)
+                # 如果两边都是目录，递归并进一步判断
+                if c.isDirectory and corresponding.isDirectory:
+                    self.findUselessFiles(c, corresponding)
+                # 其它情况均由findMissingFiles进行处理了，这里不需要重复计算
+            else:  # 如果远程端没有有这个文件，就直接删掉好了
+                self.addUselessFile(c, current.relPath(self.basePath))
 
-            if corresponding is not None:  # 如果远程端也有这个文件
-                if file.isDirectory:
-                    if 'tree' in corresponding:
-                        # 如果 本地对象 和 远程对象 都是目录，递归调用进行进一步判断
-                        self.scanDeletableFiles(file, corresponding['tree'], base)
-                # 其它情况均由scanDownloadableFiles进行处理了，这里不需要重复判断
-            else:  # 远程端没有有这个文件，就直接删掉好了
-                self.delete(file)
+    def addMissingFile(self, missing: File, template: SimpleFileObject):
+        """添加需要传输的文件
+        :param missing: 缺失的文件对象(文件/目录)
+        :param template: 对照模板(文件/目录)
+        :return:
+        """
 
-    @staticmethod
-    def getNameInTree(_name: str, _tree: list):
-        """在一个远程目录对象里获取一个文件对象"""
-        for n in _tree:
-            if n['name'] == _name:
-                return n
-        return None
-
-    def delete(self, file: File):
-        if file.isDirectory:
-            for f in file:
-                if 'tree' in f:
-                    self.delete(f)
+        if template.isDirectory:
+            folder = missing.parent.relPath(self.basePath)
+            if folder not in self.missingFolders and folder != '.':
+                self.missingFolders += [folder]
+            for t in template:
+                mCorresponding = missing(t.name)
+                if t.isDirectory:
+                    self.addMissingFile(mCorresponding, t)
                 else:
-                    self.deleteList.append(f.relPath(self.basePath))
-        self.deleteList.append(file.relPath(self.basePath))
-
-    def download(self, node: dict, dir: File):
-        if 'tree' in node:
-            # 提前创建文件夹（即使是空文件夹）
-            dir.append(node['name']).makeParentDirs()
-
-            for n in node['tree']:
-                dd = dir.append(n['name'])
-
-                if 'tree' in n:
-                    self.download(n, dd)
-                else:
-                    relPath = dd.relPath(self.basePath)
-                    self.downloadList.append(relPath)
-                    self.downloadMap[relPath] = n['length']
+                    self.missingFiles[mCorresponding.relPath(self.basePath)] = [t.length, t.hash]
         else:
-            relPath = dir.relPath(self.basePath)
-            self.downloadList.append(relPath)
-            self.downloadMap[relPath] = node['length']
+            self.missingFiles[missing.relPath(self.basePath)] = [template.length, template.hash]
 
-    def compare(self, dir: File, tree: list):
-        self.scanDownloadableFiles(dir, tree, dir)
-        self.scanDeletableFiles(dir, tree, dir)
+    def addUselessFile(self, file: File, dir: str):
+        """添加需要删除的文件/目录
+        :param file: 删除的文件(文件/目录)
+        :param dir: file所在的目录(文件/目录)
+        """
+        path = dir + '/' + file.name
+        pathWithoutDotSlash = path[2:] if path.startswith('./') else path
+
+        if file.isDirectory:
+            for u in file:
+                if u.isDirectory:
+                    self.addUselessFile(u, path)
+                else:
+                    newPath = path + '/' + u.name
+                    self.uselessFiles += [newPath[2:] if newPath.startswith('./') else newPath]
+
+            self.uselessFolders += [pathWithoutDotSlash]
+        else:
+            self.uselessFiles += [pathWithoutDotSlash]
+
+    @singledispatchmethod
+    def compareWith_(self, anyObj):
+        raise RuntimeWarning('no method can be matched, it only receives types of Either SimpleFileObject or list')
+
+    @compareWith_.register
+    def _(self, template: SimpleFileObject, current: File):
+        self.findMissingFiles(current, template)
+        self.findUselessFiles(current, template)
+
+    @compareWith_.register
+    def _(self, template: list, current: File):
+        template2 = {'name': '', 'tree': template}
+        self.findMissingFiles(current, SimpleFileObject.FromDict(template2))
+        self.findUselessFiles(current, SimpleFileObject.FromDict(template2))
+
+    def compareWith(self, current: File, template: SimpleFileObject):
+        self.compareWith_(template, current)
+
+    def compareWith(self, current: File, template: list):
+        self.compareWith_(template, current)

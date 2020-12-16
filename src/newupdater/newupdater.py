@@ -125,7 +125,7 @@ class NewUpdater:
 
     def downloadFile(self, url, file, filePath, downloadedBytes, totalKBytes, expectantLength):
         updatingWindow = self.e.updatingWindow
-        r = requests.get(url, stream=True, timeout=3)
+        r = requests.get(url, stream=True, timeout=5)
 
         info('正在下载: ' + filePath+' on '+url)
 

@@ -66,9 +66,9 @@ class Entry:
                 comparer = hotupdate.compare(remoteFilesStructure)
 
                 # 如果有需要删除/下载的文件，代表程序需要更新
-                if len(comparer.deleteList) > 0 or len(comparer.downloadList) > 0:
+                if len(comparer.uselessFiles) > 0 or len(comparer.uselessFolders) > 0 or len(comparer.missingFiles) > 0:
                     info('需要更新')
-                    hotupdate.main(comparer)
+                    hotupdate.main(comparer, response1['client'])
                 else:
                     info('不需要更新')
                     np = NewUpdater(self)
@@ -125,7 +125,7 @@ class Entry:
     def httpGetRequest(self, url):
         response = None
         try:
-            response = requests.get(url, timeout=3)
+            response = requests.get(url, timeout=6)
             return response.json()
         except requests.exceptions.ConnectionError as e:
             raise FailedToConnectError(e, url)

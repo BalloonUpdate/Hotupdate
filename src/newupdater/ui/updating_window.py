@@ -125,12 +125,12 @@ class UpdatingWindow(QWidget):
 
     def _addItem(self, path: str, display: str):
         index = self.model.appendFile(path, display)
-        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
+        self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+4), 0))
 
     def _setItemText(self, path: str, display: str, lookAt: bool):
         index = self.model.setItemText(path, display)
         if lookAt:
-            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+6), 0))
+            self.view.scrollTo(self.model.createIndex(min(self.model.rowCount(), index+4), 0))
 
     def _setItemBold(self, path: str, isBold: bool):
         index = self.model.findFile(path)

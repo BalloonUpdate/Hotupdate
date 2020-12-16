@@ -5,7 +5,7 @@ import hashlib
 import pathlib
 
 
-# 2020年12月14日17:41:06
+# 2020年12月16日23:25:45
 class File:
     def __init__(self, filePath):
         if not isinstance(filePath, str):
@@ -178,6 +178,9 @@ class File:
                 shutil.rmtree(self.path)
 
     def append(self, relPath):
+        if self.isFile:
+            raise NotADirectoryError(f"'{self.path}' is not a Directory, can not get content in subfolder")
+
         return File(os.path.join(self.path, relPath))
 
     @property
@@ -194,6 +197,10 @@ class File:
             return sha1obj.hexdigest()
 
     @property
+    def hash(self):
+        return self.sha1
+
+    @property
     def createdTime(self):
         return int(os.path.getctime(self.path))
 
@@ -208,11 +215,10 @@ class File:
         return time.strftime(format, time.localtime(self.modifiedTime))
 
     class Iter:
-        def __init__(self, object):
-            self.object = object
-            self.files = object.files
+        def __init__(self, obj):
+            self.files = obj.files
             self.index = 0
-            self.end = self.files.__len__()
+            self.end = len(self.files)
 
         def __next__(self):
             if self.index < self.end:
@@ -228,14 +234,14 @@ class File:
 
         return self.append(relPath)
 
+    def __getitem__(self, key):
+        return self.__call__(key)
+
+    def __add__(self, other):
+        return self.__call__(other)
+
     def __contains__(self, item):
         return os.path.exists(self.append(item).path)
-
-    def __getitem__(self, key):
-        if not isinstance(key, str):
-            raise TypeError(f"The key must be a string, not '{key}' ({type(key)})")
-
-        return self.append(key)
 
     def __len__(self):
         return len(self.files)
