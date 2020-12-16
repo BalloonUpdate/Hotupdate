@@ -233,10 +233,3 @@ class UpgradingWindow(QWidget):
         task = [int(time.time() * 1000) + delay, func]
         self.pendingTasks.append(task)
         info('添加任务')
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    updatingWindow = UpgradingWindow()
-    updatingWindow.es_setShow.emit(True)
-    sys.exit(app.exec_())
