@@ -1,10 +1,13 @@
+import sys
 import typing
 
+from PyQt5 import QtGui
 from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer, QEvent
-from PyQt5.QtGui import QFont, QShowEvent
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QMessageBox, QApplication
+from PyQt5.QtGui import QFont, QShowEvent, QIcon
+from PyQt5.QtWidgets import QVBoxLayout, QListView, QMessageBox, QApplication, QMainWindow, QWidget
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
+from src.newupdater.utils.file import File
 from src.newupdater.utils.logger import info
 
 
@@ -57,7 +60,7 @@ class UpdatingWindowDataSource(QAbstractListModel):
         self.dataChanged.emit(start, end)
 
 
-class UpdatingWindow(QWidget):
+class UpdatingWindow(QMainWindow):
     es_showMessageBox = pyqtSignal(str, str)
     es_setShow = pyqtSignal(bool)
     es_close = pyqtSignal()
@@ -85,16 +88,15 @@ class UpdatingWindow(QWidget):
 
         self.tasks = []
 
-        vbox = QVBoxLayout()
-
         view = QListView()
         model = UpdatingWindowDataSource()
 
         view.setModel(model)
 
-        vbox.addWidget(view)
+        self.setCentralWidget(view)
 
-        self.setLayout(vbox)
+        dir = File(getattr(sys, '_MEIPASS', ''))
+        self.setWindowIcon(QIcon(dir('icon.ico').path))
 
         self.model = model
         self.view = view
@@ -185,6 +187,8 @@ class UpdatingWindow(QWidget):
     def showEvent(self, event: QShowEvent) -> None:
 
         def b():
+            # self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+
             button = QWinTaskbarButton()
             button.setWindow(self.windowHandle())
 

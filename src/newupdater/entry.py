@@ -18,7 +18,7 @@ from src.newupdater.newupdater import NewUpdater
 from src.newupdater.ui.updating_window import UpdatingWindow
 from src.newupdater.ui.upgrading_window import UpgradingWindow
 from src.newupdater.utils.file import File
-from src.newupdater.utils.logger import DebugLogger, info
+from src.newupdater.utils.logger import info
 
 
 class Entry:

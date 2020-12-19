@@ -2,10 +2,11 @@ import sys
 import time
 
 from PyQt5.QtCore import QAbstractListModel, pyqtSignal, QModelIndex, QTimer, QEvent, Qt
-from PyQt5.QtGui import QFont, QShowEvent
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox
+from PyQt5.QtGui import QFont, QShowEvent, QIcon
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox, QMainWindow
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
+from src.newupdater.utils.file import File
 from src.newupdater.utils.logger import info
 
 
@@ -56,7 +57,7 @@ class UpgradingWindowDataSource(QAbstractListModel):
         self.dataChanged.emit(start, end)
 
 
-class UpgradingWindow(QWidget):
+class UpgradingWindow(QMainWindow):
     es_showMessageBox = pyqtSignal(str, str)
     es_setShow = pyqtSignal(bool)
     es_close = pyqtSignal()
@@ -85,16 +86,15 @@ class UpgradingWindow(QWidget):
         self.tasksDependOnWindow = []  # [func]
         self.pendingTasks = []  # [[time, func]]
 
-        vbox = QVBoxLayout()
-
         view = QListView()
         model = UpgradingWindowDataSource()
 
         view.setModel(model)
 
-        vbox.addWidget(view)
+        self.setCentralWidget(view)
 
-        self.setLayout(vbox)
+        dir = File(getattr(sys, '_MEIPASS', ''))
+        self.setWindowIcon(QIcon(dir('icon.ico').path))
 
         self.model = model
         self.view = view

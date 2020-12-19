@@ -1,4 +1,3 @@
-import json
 import subprocess
 import sys
 import tempfile
@@ -120,6 +119,7 @@ class HotUpdateHelper:
         # 加载进列表里
         for df in comparer.missingFiles:
             upgradingWindow.es_addItem.emit(df, '等待下载 ' + df)
+            time.sleep(0.01)
 
         # 计算总下载量
         totalKBytes = 0
@@ -142,11 +142,13 @@ class HotUpdateHelper:
                 upgradingWindow.es_setProgressValue.emit(value)
                 upgradingWindow.es_setWindowTitle.emit('正在更新 ' + "{:.1f}%".format(progress * 100))
 
-                t1 = format(recv / fileSize * 100, '.1f') + '% '
-                t2 = "{:.1f}Kb / {:.1f}Kb".format(recv / 1024, fileSize / 1024)
-                upgradingWindow.es_setItemText.emit(df, t1 + ' ' + t2 + '  ' + df, True)
+                t1 = format(recv / fileSize * 100, '<4.1f') + '% '
+                t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(recv / 1024, fileSize / 1024)
+                upgradingWindow.es_setItemText.emit(df, f'{t1} {df}  ({t2})', False)
 
                 # info(t1 + ' ' + t2 + '  ' + df)
+
+            upgradingWindow.es_setItemText.emit(df, f'100% {df}', True)
 
             expectantLength = v[0]
             downloadedKByte = self.downloadFile(url, file, progressCallback, totalKBytes, downloadedKByte, expectantLength)

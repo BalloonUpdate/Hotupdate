@@ -56,15 +56,17 @@ class NewUpdater:
         work = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
 
         # 加载进列表里
-        updatingWindow.es_setWindowTitle.emit('正在加载列表..')
+        updatingWindow.es_setWindowTitle.emit('正在加载..')
         for df in work.deleteList:
             updatingWindow.es_addItem.emit(df, '等待删除 ' + df)
+            time.sleep(0.01)
         for df in work.downloadList:
             updatingWindow.es_addItem.emit(df, '等待下载 ' + df)
+            time.sleep(0.01)
 
         # 删除旧文件
         updatingWindow.es_setProgressStatus.emit(0)  # 绿色
-        updatingWindow.es_setWindowTitle.emit('正在删除旧文件..')
+        updatingWindow.es_setWindowTitle.emit('删除旧文件..')
         totalToDelete = len(work.deleteList)  # 计算出总共要删除的文件数
         deletedCount = 0
         for df in work.deleteList:
@@ -77,7 +79,7 @@ class NewUpdater:
             time.sleep(0.02 + random.random() * 0.03)
 
         # 下载新文件
-        updatingWindow.es_setWindowTitle.emit('正在下载新文件..')
+        updatingWindow.es_setWindowTitle.emit('下载新文件..')
         totalKBytes = 0  # 计算出总下载量(字节)
         for length in work.downloadMap.values():
             totalKBytes += length
@@ -109,7 +111,7 @@ class NewUpdater:
 
         updatingWindow = self.e.updatingWindow
 
-        updatingWindow.es_setWindowTitle.emit('正在计算目录..')
+        updatingWindow.es_setWindowTitle.emit('正在检查更新..')
         updatingWindow.es_setProgressVisible.emit(True)
         updatingWindow.es_setProgressRange.emit(0, 1000)
         updatingWindow.es_setProgressValue.emit(1000)
@@ -149,9 +151,9 @@ class NewUpdater:
             downloadedBytes += len(chunk)
             updatingWindow.es_setProgressValue.emit(int(downloadedBytes / totalKBytes * 1000))
 
-            t1 = format(received / totalSize * 100, '.1f') + '% '
-            t2 = "{:.1f}Kb / {:.1f}Kb".format(received / 1024, totalSize / 1024)
-            updatingWindow.es_setItemText.emit(filePath, t1 + ' ' + t2 + '  ' + filePath, False)
+            t1 = format(received / totalSize * 100, '<4.1f') + '% '
+            t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(received / 1024, totalSize / 1024)
+            updatingWindow.es_setItemText.emit(filePath, f'{t1} {filePath}  ({t2})', False)
             updatingWindow.es_setWindowTitle.emit('正在下载新文件 ' + "{:.1f}%".format(downloadedBytes / totalKBytes * 100))
 
         if received == totalSize:
