@@ -1,14 +1,13 @@
 import subprocess
 import sys
 import tempfile
-import time
 
 import requests
+from tqdm import tqdm
 
 from src.newupdater.common import inDevelopment
 from src.newupdater.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
 from src.newupdater.hotupdate.file_comparer import FileComparer
-from src.newupdater.utils.file import File
 from src.newupdater.utils.logger import info
 
 
@@ -67,104 +66,56 @@ class HotUpdateHelper:
     def generateStartupCommand(self):
         return f'cd /D "{self.temporalScript.parent.windowsPath}" && start {self.temporalScript.name}'
 
-    def downloadFile(self, Url: str, file: File, progressCallback, total, downloaded, expectantLength):
-        try:
-            r = requests.get(Url, stream=True, timeout=5)
-            if r.status_code != 200:
-                raise UnexpectedHttpCodeError(Url, r.status_code, r.text)
-
-            recv = 0
-            includeContentLength = 'Content-Length' in r.headers
-            fileSize = int(r.headers.get("Content-Length")) if includeContentLength else expectantLength
-            chunkSize = 1024 * 64
-
-            file.makeParentDirs()
-            f = open(file.path, 'xb+')
-
-            for chunk in r.iter_content(chunk_size=chunkSize):
-                f.write(chunk)
-                downloaded += len(chunk)
-                recv += len(chunk)
-                progressCallback(downloaded, total, recv, fileSize)
-
-            f.close()
-
-            return downloaded
-        except requests.exceptions.ConnectionError as e:
-            raise FailedToConnectError(e, Url)
-        except requests.exceptions.ChunkedEncodingError as e:
-            raise UnexpectedTransmissionError(e, Url)
-
-    def main(self, comparer:FileComparer, clientSettings):
-        upgradingWindow = self.e.upgradingWindow
-
+    def main(self, comparer: FileComparer, clientSettings):
         # 生成热更新替换脚本
         batchText = self.generateBatchStatements(comparer)
-        startupText = self.generateStartupCommand()
-
-        # 初始化窗口
-        upgradingWindow.es_setWindowWidth.emit(clientSettings['width'])
-        upgradingWindow.es_setWindowHeight.emit(clientSettings['height'])
-        upgradingWindow.es_setShow.emit(True)
-        # upgradingWindow.es_setProgressStatus.emit(1)
-        # upgradingWindow.es_setProgressStatus.emit(0)
-
-        time.sleep(0.3)
-        upgradingWindow.es_setWindowTitle.emit('正在更新文件..')
-        upgradingWindow.es_setProgressVisible.emit(True)
-        upgradingWindow.es_setProgressRange.emit(0, 1000)
-        upgradingWindow.es_setProgressValue.emit(1000)
+        info('正在更新文件..')
 
         # 创建缺失的目录
         for mf in comparer.missingFolders:
             self.workDir(mf).mkdirs()
 
-        # 加载进列表里
-        for df in comparer.missingFiles:
-            upgradingWindow.es_addItem.emit(df, '等待下载 ' + df)
-            time.sleep(0.01)
-
         # 计算总下载量
         totalKBytes = 0
-        downloadedKByte = 0
+        downloadedBytes = 0
         for df in comparer.missingFiles.values():
             totalKBytes += df[0]
 
-        # 下载新文件
-        for k, v in comparer.missingFiles.items():
-            df = k
-            url = self.e.upgradeSource + '/' + df
-            file = self.temporalDir(df)
-            info('下载: ' + file.name)
+        with tqdm(total=int(totalKBytes/1024), dynamic_ncols=True, unit='kb',  # desc=file.name,
+                  bar_format="{percentage:3.0f}% {bar} {n_fmt}/{total_fmt}Kb {rate_fmt}{postfix}") as pbar:
 
-            upgradingWindow.es_setItemBold.emit(df, True)
+            # 下载新文件
+            for k, v in comparer.missingFiles.items():
+                url = self.e.upgradeSource + '/' + k
+                file = self.temporalDir(k)
+                expectantLength = v[0]
 
-            def progressCallback(recvFileBytes, totalFileBytes, recv, fileSize):
-                progress = recvFileBytes / totalFileBytes
-                value = int(progress * 1000)
-                upgradingWindow.es_setProgressValue.emit(value)
-                upgradingWindow.es_setWindowTitle.emit('正在更新 ' + "{:.1f}%".format(progress * 100))
+                info('下载: ' + file.name)
 
-                t1 = format(recv / fileSize * 100, '<4.1f') + '% '
-                t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(recv / 1024, fileSize / 1024)
-                upgradingWindow.es_setItemText.emit(df, f'{t1} {df}  ({t2})', False)
+                try:
+                    r = requests.get(url, stream=True, timeout=5)
 
-                # info(t1 + ' ' + t2 + '  ' + df)
+                    if r.status_code != 200:
+                        raise UnexpectedHttpCodeError(url, r.status_code, r.text)
 
-            upgradingWindow.es_setItemText.emit(df, f'100% {df}', True)
+                    file.makeParentDirs()
+                    with open(file.path, 'xb+') as f:
+                        for chunk in r.iter_content(chunk_size=1024 * 64):
+                            f.write(chunk)
+                            downloadedBytes += len(chunk)
+                            pbar.update(int(len(chunk)/1024))
 
-            expectantLength = v[0]
-            downloadedKByte = self.downloadFile(url, file, progressCallback, totalKBytes, downloadedKByte, expectantLength)
+                except requests.exceptions.ConnectionError as e:
+                    raise FailedToConnectError(e, url)
+                except requests.exceptions.ChunkedEncodingError as e:
+                    raise UnexpectedTransmissionError(e, url)
+
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:
             f.write(batchText)
-        # 执行
-        subprocess.call(startupText, shell=True)
 
-        upgradingWindow.es_close.emit()
-        self.e.updatingWindow.es_close.emit()
-
-        # sys.exit()
+        # 开始执行替换
+        subprocess.call(self.generateStartupCommand(), shell=True)
 
         # temporalDir.delete() # 由批处理文件删除
         # temporalScript.delete() # 由批处理文件删除

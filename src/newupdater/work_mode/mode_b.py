@@ -39,4 +39,4 @@ class BMode(BaseWorkMode):
 
     def scan(self, dir: File, tree: list):
         self.walk(dir, tree, dir)
-        self.excludeSelf()
+        # self.excludeSelf()

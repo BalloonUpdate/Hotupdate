@@ -15,12 +15,12 @@ class DebugLogger(logging.Logger):
         self.fileHandler.setLevel(logging.INFO)
         self.fileHandler.setFormatter(formatter)
 
-        self.streamHandler = logging.StreamHandler(sys.stdout)
-        self.streamHandler.setLevel(logging.INFO)
-        self.streamHandler.setFormatter(formatter)
+        # self.streamHandler = logging.StreamHandler(sys.stdout)
+        # self.streamHandler.setLevel(logging.INFO)
+        # self.streamHandler.setFormatter(formatter)
 
         self.addHandler(self.fileHandler)
-        self.addHandler(self.streamHandler)
+        # self.addHandler(self.streamHandler)
 
     @staticmethod
     def getFormatter():
@@ -36,4 +36,9 @@ logger.info('log file location: '+logFile.path)
 
 
 def info(text):
+    logger.info(str(text))
+    print(text)
+
+
+def debug(text):
     logger.info(str(text))

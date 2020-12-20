@@ -1,24 +1,20 @@
 import base64
 import json
 import sys
-import threading
 import traceback
 from binascii import Error
 from json import JSONDecodeError
 from urllib.parse import unquote
 
 import requests
-from PyQt5.QtWidgets import QApplication
 
 from src.newupdater.common import inDevelopment
 from src.newupdater.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
 from src.newupdater.hotupdater import HotUpdateHelper
 from src.newupdater.newupdater import NewUpdater
-from src.newupdater.ui.updating_window import UpdatingWindow
-from src.newupdater.ui.upgrading_window import UpgradingWindow
 from src.newupdater.utils.file import File
-from src.newupdater.utils.logger import info
+from src.newupdater.utils.logger import info, debug
 
 
 class Entry:
@@ -30,13 +26,6 @@ class Entry:
         self.upgradeSource = ''
         self.updateApi = ''  # 文件更新的API
         self.updateSource = ''
-
-        # 初始化UI界面
-        self.qt = QApplication(sys.argv)
-        self.updatingWindow = UpdatingWindow()
-        self.upgradingWindow = UpgradingWindow()
-
-        self.uiThreadHandle = threading.Thread(target=self.work, daemon=True)
 
     def work(self):
         try:
@@ -67,14 +56,12 @@ class Entry:
 
                 # 如果有需要删除/下载的文件，代表程序需要更新
                 if len(comparer.uselessFiles) > 0 or len(comparer.uselessFolders) > 0 or len(comparer.missingFiles) > 0:
-                    info('需要更新')
-                    info('uselessFiles: ' + str(comparer.uselessFiles))
-                    info('uselessFolders: ' + str(comparer.uselessFolders))
-                    info('missingFiles: ' + str(comparer.missingFiles))
+                    debug('uselessFiles: ' + str(comparer.uselessFiles))
+                    debug('uselessFolders: ' + str(comparer.uselessFolders))
+                    debug('missingFiles: ' + str(comparer.missingFiles))
 
                     hotupdate.main(comparer, response1['client'])
                 else:
-                    info('不需要更新')
                     np = NewUpdater(self)
                     np.main(response1, response1['client'])
             except requests.exceptions.ConnectionError as e:
@@ -85,21 +72,15 @@ class Entry:
                 exit(1)
         except BasicDisplayableError as e:
             info('异常: '+str(e))
-            self.upgradingWindow.es_showMessageBox.emit(e.content, e.title)
-            sys.exit(1)
+            input('任意键退出..')
         except SystemExit:
             pass
         except BaseException as e:
             info('出现了未知错误: '+traceback.format_exc())
-            self.upgradingWindow.es_showMessageBox.emit(traceback.format_exc(), '出现了未知错误')
-            sys.exit(1)
+            input('任意键退出..')
 
     def main(self):
-        self.uiThreadHandle.start()
-
-        info('ui工作')
-        r = self.qt.exec_()
-        info('ui退出'+str(r))
+        self.work()
 
     def initializeWorkDirectory(self):
         if not inDevelopment:
