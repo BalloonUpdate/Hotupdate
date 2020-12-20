@@ -68,6 +68,10 @@ class Entry:
                 # 如果有需要删除/下载的文件，代表程序需要更新
                 if len(comparer.uselessFiles) > 0 or len(comparer.uselessFolders) > 0 or len(comparer.missingFiles) > 0:
                     info('需要更新')
+                    info('uselessFiles: ' + str(comparer.uselessFiles))
+                    info('uselessFolders: ' + str(comparer.uselessFolders))
+                    info('missingFiles: ' + str(comparer.missingFiles))
+
                     hotupdate.main(comparer, response1['client'])
                 else:
                     info('不需要更新')

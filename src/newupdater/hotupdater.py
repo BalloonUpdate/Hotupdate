@@ -35,14 +35,17 @@ class HotUpdateHelper:
         # 准备生成用于热替换的batch脚本
         batchText = '@echo off \n'
         batchText += 'echo 准备中.. \n'
-        batchText += 'ping -n 2 127.0.0.1 > nul \n'
+        batchText += 'ping -n 3 127.0.0.1 > nul \n'
 
         # 删除旧文件
-        batchText += f'echo 删除旧文件({len(comparer.uselessFiles)})\n'
+        batchText += f'echo 删除旧文件({len(comparer.uselessFiles) + len(comparer.uselessFolders)})\n'
         for d in comparer.uselessFiles:
             file = self.hotupdate[d]
             delCmd = 'del /F /S /Q ' if file.isFile else 'rmdir /S /Q '
             batchText += delCmd + '"' + file.windowsPath + '"\n'
+        for d in comparer.uselessFolders:
+            file = self.hotupdate[d]
+            batchText += f'rmdir /S /Q "{file.windowsPath}"\n'
 
         # 复制新文件
         source = self.temporalDir.windowsPath + '\\*'
