@@ -13,8 +13,9 @@ from PyQt5.QtWidgets import QApplication
 from src.newupdater.common import inDevelopment
 from src.newupdater.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
-from src.newupdater.hotupdater import HotUpdateHelper
+from src.newupdater.hotupdate import HotUpdateHelper
 from src.newupdater.newupdater import NewUpdater
+from src.newupdater.ui.splash_window import SplashWindow
 from src.newupdater.ui.updating_window import UpdatingWindow
 from src.newupdater.ui.upgrading_window import UpgradingWindow
 from src.newupdater.utils.file import File
@@ -35,6 +36,7 @@ class Entry:
         self.qt = QApplication(sys.argv)
         self.updatingWindow = UpdatingWindow()
         self.upgradingWindow = UpgradingWindow()
+        self.splashWindow = SplashWindow()
 
         self.uiThreadHandle = threading.Thread(target=self.work, daemon=True)
 
@@ -42,6 +44,10 @@ class Entry:
         try:
             try:
                 self.initializeWorkDirectory()
+
+                self.splashWindow.es_setShow.emit(True)
+                self.splashWindow.es_setWindowTitle.emit('NewUpdater')
+                self.splashWindow.es_setText.emit('正在连接服务器')
 
                 # 从文件读取服务端url并解码
                 self.serverUrl = self.decodeUrl(self.getSettingsJson()['url'])
@@ -64,6 +70,10 @@ class Entry:
                 # 与本地进行对比
                 hotupdate = HotUpdateHelper(self)
                 comparer = hotupdate.compare(remoteFilesStructure)
+                self.splashWindow.es_setText.emit('正在加载..')
+
+                # 关闭窗口
+                self.splashWindow.es_setShow.emit(False)
 
                 # 如果有需要删除/下载的文件，代表程序需要更新
                 if len(comparer.uselessFiles) > 0 or len(comparer.uselessFolders) > 0 or len(comparer.missingFiles) > 0:
@@ -77,12 +87,9 @@ class Entry:
                     info('不需要更新')
                     np = NewUpdater(self)
                     np.main(response1, response1['client'])
-            except requests.exceptions.ConnectionError as e:
-                info('请求失败,连接错误: \n' + str(e))
-                input('任意键退出..')
-            except KeyboardInterrupt:
-                info('收到键盘中断信号')
-                exit(1)
+            finally:
+                # 关闭窗口
+                self.splashWindow.es_setShow.emit(False)
         except BasicDisplayableError as e:
             info('异常: '+str(e))
             self.upgradingWindow.es_showMessageBox.emit(e.content, e.title)
@@ -135,3 +142,5 @@ class Entry:
             raise FailedToConnectError(e, url)
         except JSONDecodeError as e:
             raise UnableToDecodeError(e, url, response.status_code, response.text)
+        except requests.exceptions.ReadTimeout as e:
+            raise FailedToConnectError(e, url)

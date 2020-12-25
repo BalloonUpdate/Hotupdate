@@ -1,10 +1,9 @@
 import sys
 import typing
 
-from PyQt5 import QtGui
 from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSignal, QTimer, QEvent
 from PyQt5.QtGui import QFont, QShowEvent, QIcon
-from PyQt5.QtWidgets import QVBoxLayout, QListView, QMessageBox, QApplication, QMainWindow, QWidget
+from PyQt5.QtWidgets import QListView, QMessageBox, QApplication, QMainWindow
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
 from src.newupdater.utils.file import File

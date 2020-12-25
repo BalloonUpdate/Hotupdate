@@ -31,7 +31,7 @@ class FailedToConnectError(BasicDisplayableError):
         super(FailedToConnectError, self).__init__()
 
         self.title = '无法连接到服务器'
-        self.content = self.content = f'URL: {url}\n'
+        self.content = self.content = f'服务器响应超时\n{url}'
 
 
 class UnableToDecodeError(BasicDisplayableError):

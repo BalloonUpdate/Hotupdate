@@ -154,7 +154,7 @@ class NewUpdater:
             t1 = format(received / totalSize * 100, '<4.1f') + '% '
             t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(received / 1024, totalSize / 1024)
             updatingWindow.es_setItemText.emit(filePath, f'{t1} {filePath}  ({t2})', False)
-            updatingWindow.es_setWindowTitle.emit('正在下载新文件 ' + "{:.1f}%".format(downloadedBytes / totalKBytes * 100))
+            updatingWindow.es_setWindowTitle.emit('下载新文件 ' + "{:.0f}%".format(downloadedBytes / totalKBytes * 100))
 
         if received == totalSize:
             updatingWindow.es_setItemText.emit(filePath, '100%  ' + filePath, True)

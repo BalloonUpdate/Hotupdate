@@ -7,8 +7,8 @@ import requests
 
 from src.newupdater.common import inDevelopment
 from src.newupdater.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
-from src.newupdater.hotupdate.file_comparer import FileComparer
 from src.newupdater.utils.file import File
+from src.newupdater.utils.file_comparer import FileComparer
 from src.newupdater.utils.logger import info
 
 
@@ -143,7 +143,7 @@ class HotUpdateHelper:
                 progress = recvFileBytes / totalFileBytes
                 value = int(progress * 1000)
                 upgradingWindow.es_setProgressValue.emit(value)
-                upgradingWindow.es_setWindowTitle.emit('正在更新 ' + "{:.1f}%".format(progress * 100))
+                upgradingWindow.es_setWindowTitle.emit('正在更新 ' + "{:.0f}%".format(progress * 100))
 
                 t1 = format(recv / fileSize * 100, '<4.1f') + '% '
                 t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(recv / 1024, fileSize / 1024)
