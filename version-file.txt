@@ -38,7 +38,7 @@ VSVersionInfo(
             StringStruct(u'LegalTrademarks', u''),
             StringStruct(u'OriginalFilename', u''),
             StringStruct(u'ProductName', u'NewUpdater'),
-            StringStruct(u'ProductVersion', u'1.4.4'),
+            StringStruct(u'ProductVersion', u'1.4.6d'),
             StringStruct(u'Assembly Version', u'1.0.0.0')
           ]
         )

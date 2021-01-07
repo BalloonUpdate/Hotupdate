@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import time
 
@@ -99,6 +100,9 @@ class UpgradingWindow(QMainWindow):
         self.model = model
         self.view = view
 
+        # Entry instance
+        self.e = None
+
         self.es_showMessageBox.connect(self._showMessageBox)
         self.es_setShow.connect(self._setShow)
         self.es_addItem.connect(self._addItem)
@@ -117,10 +121,22 @@ class UpgradingWindow(QMainWindow):
         self.initializeTimer()
 
     def _showMessageBox(self, message, title):
+        jsondata = self.e.getSettingsJson()
+        if 'error_message' in jsondata:
+            message += '\n\n'+jsondata['error_message']
+
         msgBox = QMessageBox()
+        if 'error_help' in jsondata:
+            msgBox.addButton(QMessageBox.StandardButton.Open)
+        msgBox.addButton(QMessageBox.StandardButton.Ok)
         msgBox.setText(message)
         msgBox.setWindowTitle(title)
         msgBox.exec_()
+
+        if 'error_help' in jsondata:
+            if msgBox.result() == QMessageBox.StandardButton.Open:
+                cmd = jsondata['error_help']
+                subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {cmd}', shell=True)
 
     def _setShow(self, show: bool):
         self.setVisible(show)

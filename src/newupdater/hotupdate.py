@@ -33,9 +33,30 @@ class HotUpdateHelper:
 
     def generateBatchStatements(self, comparer: FileComparer):
         # 准备生成用于热替换的batch脚本
-        batchText = '@echo off \n'
-        batchText += 'echo 准备中.. \n'
-        batchText += 'ping -n 3 127.0.0.1 > nul \n'
+        batchText = '''
+        @echo off
+        echo 准备中..
+        
+        SET /a count=20
+        SET tempFile=.temp.txt
+        
+        REM 循环检测
+        :check
+        tasklist.exe | findstr NewUpdater.exe > %tempFile%
+        set /p Running=<%tempFile%
+        
+        if %count% LSS 0 ( exit )
+        set /a count=%count%-1
+        
+        if "%Running%" NEQ "" (
+            ping -n 1 127.0.0.1 > nul 
+            set Running=
+            goto check
+        )
+        
+        REM del %tempFile%
+        
+        '''
 
         # 删除旧文件
         batchText += f'echo 删除旧文件({len(comparer.uselessFiles) + len(comparer.uselessFolders)})\n'
@@ -54,13 +75,14 @@ class HotUpdateHelper:
         batchText += f'echo 复制新文件({len(comparer.missingFiles)})\n'
         batchText += f'xcopy /E /R /Y "{source}" "{destination}" \n'
         batchText += 'echo 清理临时目录\n'
-        batchText += 'ping -n 1 127.0.0.1 > nul \n'
         batchText += 'rmdir /S /Q "' + self.temporalDir.windowsPath + '"\n'
         batchText += 'echo done!!\n'
-        batchText += 'ping -n 2 127.0.0.1 > nul \n'
-        batchText += f'cd /D "{self.e.exe.parent.windowsPath}" && start {self.e.exe.name} \n' if not inDevelopment else 'echo 运行在开发模式\n'
         batchText += 'exit\n'
-        batchText += 'del /F /S /Q "' + self.temporalScript.windowsPath + '"'
+
+        # 由启动器来启动，故注释
+        # batchText += f'cd /D "{self.e.exe.parent.windowsPath}" && start {self.e.exe.name} \n' if not inDevelopment else 'echo 运行在开发模式\n'
+
+        # batchText += 'del /F /S /Q "' + self.temporalScript.windowsPath + '"'
 
         return batchText
 
@@ -158,13 +180,14 @@ class HotUpdateHelper:
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:
             f.write(batchText)
+
         # 执行
         subprocess.call(startupText, shell=True)
 
+        self.e.exitcode = 2
+
+        # 关闭窗口
         upgradingWindow.es_close.emit()
         self.e.updatingWindow.es_close.emit()
-
-        # sys.exit()
-
         # temporalDir.delete() # 由批处理文件删除
         # temporalScript.delete() # 由批处理文件删除

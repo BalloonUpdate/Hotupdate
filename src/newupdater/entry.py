@@ -31,12 +31,15 @@ class Entry:
         self.upgradeSource = ''
         self.updateApi = ''  # 文件更新的API
         self.updateSource = ''
+        self.exitcode = 0
 
         # 初始化UI界面
         self.qt = QApplication(sys.argv)
         self.updatingWindow = UpdatingWindow()
         self.upgradingWindow = UpgradingWindow()
         self.splashWindow = SplashWindow()
+
+        self.upgradingWindow.e = self
 
         self.uiThreadHandle = threading.Thread(target=self.work, daemon=True)
 
@@ -89,24 +92,28 @@ class Entry:
                     np.main(response1, response1['client'])
             finally:
                 # 关闭窗口
-                self.splashWindow.es_setShow.emit(False)
+                try:
+                    self.splashWindow.es_setShow.emit(False)
+                except RuntimeError:
+                    pass
         except BasicDisplayableError as e:
-            info('异常: '+str(e))
+            info('异常: ' + str(e))
             self.upgradingWindow.es_showMessageBox.emit(e.content, e.title)
-            sys.exit(1)
-        except SystemExit:
-            pass
         except BaseException as e:
-            info('出现了未知错误: '+traceback.format_exc())
+            info('出现了未知错误: ' + traceback.format_exc())
             self.upgradingWindow.es_showMessageBox.emit(traceback.format_exc(), '出现了未知错误')
-            sys.exit(1)
 
     def main(self):
         self.uiThreadHandle.start()
 
         info('ui工作')
         r = self.qt.exec_()
-        info('ui退出'+str(r))
+        info('ui退出' + str(r))
+
+        if self.exitcode == 2:
+            self.exe.parent.parent('updater.signal').create()
+
+        sys.exit(self.exitcode)
 
     def initializeWorkDirectory(self):
         if not inDevelopment:
