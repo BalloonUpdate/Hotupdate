@@ -129,7 +129,7 @@ class Entry:
     def getSettingsJson(self):
         try:
             file = self.workDir('.minecraft/updater.settings.json')
-            return json.loads(file.content)
+            return json.loads(file.template)
         except FileNotFoundError:
             raise NoSettingsFileError(file)
 

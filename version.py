@@ -1,4 +1,9 @@
-# UTF-8
+productName = 'NewUpdater'
+productVersion = '1.4.6'
+
+output = 'version-file.txt'
+
+template = f'''# UTF-8
 #
 # For more details about fixed file info 'ffi' see:
 # http://msdn.microsoft.com/en-us/library/ms646997.aspx
@@ -37,8 +42,8 @@ VSVersionInfo(
             StringStruct(u'LegalCopyright', u''),
             StringStruct(u'LegalTrademarks', u''),
             StringStruct(u'OriginalFilename', u''),
-            StringStruct(u'ProductName', u'NewUpdater'),
-            StringStruct(u'ProductVersion', u'1.4.6d'),
+            StringStruct(u'ProductName', u'{productName}'),
+            StringStruct(u'ProductVersion', u'{productVersion}'),
             StringStruct(u'Assembly Version', u'1.0.0.0')
           ]
         )
@@ -46,3 +51,9 @@ VSVersionInfo(
     VarFileInfo([VarStruct(u'Translation', [0, 1200])])
   ]
 )
+'''
+
+with open(output, "w+", encoding="utf-8") as f:
+    f.write(template)
+
+print(productName+'-'+productVersion)
