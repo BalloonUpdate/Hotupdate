@@ -184,6 +184,7 @@ class HotUpdateHelper:
         # 执行
         subprocess.call(startupText, shell=True)
 
+        # 返回2
         self.e.exitcode = 2
 
         # 关闭窗口
