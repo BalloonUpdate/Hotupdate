@@ -1,0 +1,21 @@
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: |
+          sudo timedatectl set-timezone 'Asia/Shanghai'
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+        
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: echo Build finished!!!!!!!!!
