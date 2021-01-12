@@ -10,16 +10,16 @@ from urllib.parse import unquote
 import requests
 from PyQt5.QtWidgets import QApplication
 
-from src.newupdater.common import inDevelopment
-from src.newupdater.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
+from src.updater.common import inDevelopment
+from src.updater.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
-from src.newupdater.hotupdate import HotUpdateHelper
-from src.newupdater.newupdater import NewUpdater
-from src.newupdater.ui.splash_window import SplashWindow
-from src.newupdater.ui.updating_window import UpdatingWindow
-from src.newupdater.ui.upgrading_window import UpgradingWindow
-from src.newupdater.utils.file import File
-from src.newupdater.utils.logger import info
+from src.updater.hotupdate import HotUpdateHelper
+from src.updater.newupdater import NewUpdater
+from src.updater.ui.splash_window import SplashWindow
+from src.updater.ui.updating_window import UpdatingWindow
+from src.updater.ui.upgrading_window import UpgradingWindow
+from src.updater.utils.file import File
+from src.updater.utils.logger import info
 
 
 class Entry:
@@ -49,7 +49,7 @@ class Entry:
                 self.initializeWorkDirectory()
 
                 self.splashWindow.es_setShow.emit(True)
-                self.splashWindow.es_setWindowTitle.emit('NewUpdater')
+                self.splashWindow.es_setWindowTitle.emit('UpdaterHotupdatePackage')
                 self.splashWindow.es_setText.emit('正在连接服务器')
 
                 # 从文件读取服务端url并解码

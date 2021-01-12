@@ -1,6 +1,6 @@
-from src.newupdater.utils.file import File
-from src.newupdater.utils.logger import info
-from src.newupdater.work_mode.base_work_mode import BaseWorkMode
+from src.updater.utils.file import File
+from src.updater.utils.logger import info
+from src.updater.work_mode.base_work_mode import BaseWorkMode
 
 
 class AMode(BaseWorkMode):

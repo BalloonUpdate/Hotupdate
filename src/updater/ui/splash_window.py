@@ -4,7 +4,7 @@ from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QHBoxLayout, QWidget
 
-from src.newupdater.utils.file import File
+from src.updater.utils.file import File
 
 
 class SplashWindow(QMainWindow):

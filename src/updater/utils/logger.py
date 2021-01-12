@@ -1,8 +1,8 @@
 import logging
 import sys
 
-from src.newupdater.common import inDevelopment
-from src.newupdater.utils.file import File
+from src.updater.common import inDevelopment
+from src.updater.utils.file import File
 
 
 class DebugLogger(logging.Logger):

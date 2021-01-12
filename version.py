@@ -1,5 +1,5 @@
-productName = 'NewUpdater'
-productVersion = '1.4.7'
+productName = 'UpdaterHotupdatePackage'
+productVersion = '2.5'
 
 output = 'version-file.txt'
 

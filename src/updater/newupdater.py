@@ -5,11 +5,11 @@ import time
 
 import requests
 
-from src.newupdater.common import inDevelopment
-from src.newupdater.exception.displayable_error import UnexpectedHttpCodeError
-from src.newupdater.utils.logger import info
-from src.newupdater.work_mode.mode_a import AMode
-from src.newupdater.work_mode.mode_b import BMode
+from src.updater.common import inDevelopment
+from src.updater.exception.displayable_error import UnexpectedHttpCodeError
+from src.updater.utils.logger import info
+from src.updater.work_mode.mode_a import AMode
+from src.updater.work_mode.mode_b import BMode
 
 
 class NewUpdater:

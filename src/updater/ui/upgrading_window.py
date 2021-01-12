@@ -7,8 +7,8 @@ from PyQt5.QtGui import QFont, QShowEvent, QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox, QMainWindow
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
-from src.newupdater.utils.file import File
-from src.newupdater.utils.logger import info
+from src.updater.utils.file import File
+from src.updater.utils.logger import info
 
 
 class UpgradingWindowDataSource(QAbstractListModel):

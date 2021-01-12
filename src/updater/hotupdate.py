@@ -5,11 +5,11 @@ import time
 
 import requests
 
-from src.newupdater.common import inDevelopment
-from src.newupdater.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
-from src.newupdater.utils.file import File
-from src.newupdater.utils.file_comparer import FileComparer
-from src.newupdater.utils.logger import info
+from src.updater.common import inDevelopment
+from src.updater.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
+from src.updater.utils.file import File
+from src.updater.utils.file_comparer import FileComparer
+from src.updater.utils.logger import info
 
 
 class HotUpdateHelper:
@@ -42,7 +42,7 @@ class HotUpdateHelper:
         
         REM 循环检测
         :check
-        tasklist.exe | findstr NewUpdater.exe > %tempFile%
+        tasklist.exe | findstr UpdaterHotupdatePackage.exe > %tempFile%
         set /p Running=<%tempFile%
         
         if %count% LSS 0 ( exit )
