@@ -52,11 +52,15 @@ class Entry:
                 self.splashWindow.es_setWindowTitle.emit('UpdaterHotupdatePackage')
                 self.splashWindow.es_setText.emit('正在连接服务器')
 
+                # 读取配置文件
+                settingsJson = self.getSettingsJson()
+
                 # 从文件读取服务端url并解码
-                self.serverUrl = self.decodeUrl(self.getSettingsJson()['url'])
+                self.serverUrl = self.decodeUrl(settingsJson['url'])
 
                 # 发起请求并处理返回的数据
-                response1 = self.httpGetRequest(self.serverUrl)
+                index = ('/' + settingsJson['index']) if 'index' in settingsJson else ''
+                response1 = self.httpGetRequest(self.serverUrl + index)
                 upgrade_info = response1['upgrade_info']
                 upgrade_dir = response1['upgrade_dir']
                 update_info = response1['update_info']
@@ -99,9 +103,11 @@ class Entry:
         except BasicDisplayableError as e:
             info('异常: ' + str(e))
             self.upgradingWindow.es_showMessageBox.emit(e.content, e.title)
+            self.exitcode = 1
         except BaseException as e:
             info('出现了未知错误: ' + traceback.format_exc())
             self.upgradingWindow.es_showMessageBox.emit(traceback.format_exc(), '出现了未知错误')
+            self.exitcode = 1
 
     def main(self):
         self.uiThreadHandle.start()
@@ -110,8 +116,17 @@ class Entry:
         r = self.qt.exec_()
         info('ui退出' + str(r))
 
+        hotupdateSignal = self.exe.parent('updater.hotupdate.signal')
+        errorSignal = self.exe.parent('updater.error.signal')
+
+        hotupdateSignal.delete()
+        errorSignal.delete()
+
         if self.exitcode == 2:
-            self.exe.parent.parent('updater.signal').create()
+            hotupdateSignal.create()
+
+        if self.exitcode == 1:
+            errorSignal.create()
 
         sys.exit(self.exitcode)
 
@@ -140,7 +155,8 @@ class Entry:
             serverUrl = url
         return serverUrl
 
-    def httpGetRequest(self, url):
+    @staticmethod
+    def httpGetRequest(url):
         response = None
         try:
             response = requests.get(url, timeout=6)

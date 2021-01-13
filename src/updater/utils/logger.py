@@ -29,7 +29,7 @@ class DebugLogger(logging.Logger):
         return logging.Formatter(fmt=lineFormat, datefmt=dateFormat)
 
 
-logFile = File(sys.executable).parent.parent('updater.log') if not inDevelopment else File('updater.log')
+logFile = File(sys.executable).parent.parent('logs/updater.log') if not inDevelopment else File('updater.log')
 logFile.clear()
 logger = DebugLogger(logFile)
 logger.info('log file location: '+logFile.path)
