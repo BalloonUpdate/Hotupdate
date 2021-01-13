@@ -2,9 +2,9 @@
 target/
 logs.txt
 .run
-*temptemp/
 .minecraft/
 debug-dir/
+version-file.txt
 
 
 # Byte-compiled / optimized / DLL files
