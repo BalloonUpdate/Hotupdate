@@ -7,6 +7,7 @@ from PyQt5.QtGui import QFont, QShowEvent, QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox, QMainWindow
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
+from src.updater.exception.displayable_error import NoSettingsFileError
 from src.updater.utils.file import File
 from src.updater.utils.logger import info
 
@@ -121,21 +122,26 @@ class UpgradingWindow(QMainWindow):
         self.initializeTimer()
 
     def _showMessageBox(self, message, title):
-        jsondata = self.e.getSettingsJson()
-        if 'error_message' in jsondata:
-            message += '\n\n'+jsondata['error_message']
+        jsonData = {}
+        try:
+            jsonData = self.e.getSettingsJson()
+        except NoSettingsFileError:
+            pass
+
+        if 'error_message' in jsonData:
+            message += '\n\n'+jsonData['error_message']
 
         msgBox = QMessageBox()
-        if 'error_help' in jsondata:
+        if 'error_help' in jsonData:
             msgBox.addButton(QMessageBox.StandardButton.Open)
         msgBox.addButton(QMessageBox.StandardButton.Ok)
         msgBox.setText(message)
         msgBox.setWindowTitle(title)
         msgBox.exec_()
 
-        if 'error_help' in jsondata:
+        if 'error_help' in jsonData:
             if msgBox.result() == QMessageBox.StandardButton.Open:
-                cmd = jsondata['error_help']
+                cmd = jsonData['error_help']
                 subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {cmd}', shell=True)
 
     def _setShow(self, show: bool):

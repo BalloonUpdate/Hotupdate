@@ -132,13 +132,11 @@ class Entry:
 
     def initializeWorkDirectory(self):
         if not inDevelopment:
-            cwd = File(sys.argv[1]) if len(sys.argv) > 1 else self.exe.parent.parent.parent
-            if '.minecraft' in cwd:
-                self.workDir = cwd
-            else:
-                raise NotInRightPathError(cwd.path)
+            self.workDir = File(sys.argv[1]) if len(sys.argv) > 1 else self.exe.parent.parent.parent
+            if '.minecraft' not in self.workDir:
+                raise NotInRightPathError(self.workDir.path)
         else:
-            self.workDir = File('debug-dir')
+            self.workDir = File('debug-workdir')
             self.workDir.mkdirs()
 
     def getSettingsJson(self):
