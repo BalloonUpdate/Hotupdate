@@ -1,6 +1,6 @@
 from functools import singledispatchmethod
 
-from src.updater.utils.file import File
+from src.utils.file import File
 
 
 class SimpleFileObject:

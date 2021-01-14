@@ -4,12 +4,11 @@ import time
 
 from PyQt5.QtCore import QAbstractListModel, pyqtSignal, QModelIndex, QTimer, QEvent, Qt
 from PyQt5.QtGui import QFont, QShowEvent, QIcon
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListView, QMessageBox, QMainWindow
+from PyQt5.QtWidgets import QApplication, QListView, QMessageBox, QMainWindow
 from PyQt5.QtWinExtras import QWinTaskbarButton, QWinTaskbarProgress
 
-from src.updater.exception.displayable_error import NoSettingsFileError
-from src.updater.utils.file import File
-from src.updater.utils.logger import info
+from src.exception.displayable_error import NoSettingsFileError
+from src.utils.file import File
 
 
 class UpgradingWindowDataSource(QAbstractListModel):

@@ -10,16 +10,16 @@ from urllib.parse import unquote
 import requests
 from PyQt5.QtWidgets import QApplication
 
-from src.updater.common import inDevelopment
-from src.updater.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
+from src.common import inDevelopment
+from src.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
-from src.updater.hotupdate import HotUpdateHelper
-from src.updater.newupdater import NewUpdater
-from src.updater.ui.splash_window import SplashWindow
-from src.updater.ui.updating_window import UpdatingWindow
-from src.updater.ui.upgrading_window import UpgradingWindow
-from src.updater.utils.file import File
-from src.updater.utils.logger import info
+from src.hotupdate import HotUpdateHelper
+from src.newupdater import NewUpdater
+from src.ui.splash_window import SplashWindow
+from src.ui.updating_window import UpdatingWindow
+from src.ui.upgrading_window import UpgradingWindow
+from src.utils.file import File
+from src.utils.logger import info
 
 
 class Entry:

@@ -5,11 +5,11 @@ import time
 
 import requests
 
-from src.updater.common import inDevelopment
-from src.updater.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
-from src.updater.utils.file import File
-from src.updater.utils.file_comparer import FileComparer
-from src.updater.utils.logger import info
+from src.common import inDevelopment
+from src.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
+from src.utils.file import File
+from src.utils.file_comparer import FileComparer
+from src.utils.logger import info
 
 
 class HotUpdateHelper:
