@@ -157,7 +157,7 @@ class HotUpdateHelper:
             df = k
             url = self.e.upgradeSource + '/' + df
             file = self.temporalDir(df)
-            info('下载: ' + file.name)
+            info('downloading: ' + file.name)
 
             upgradingWindow.es_setItemBold.emit(df, True)
 

@@ -197,7 +197,6 @@ class UpdatingWindow(QMainWindow):
             self.taskbarProgress = progress
 
             while len(self.tasks) > 0:
-                info('执行队列')
                 self.tasks.pop(0)()
 
         self.delayExecuting(func=b, delayInSec=5)

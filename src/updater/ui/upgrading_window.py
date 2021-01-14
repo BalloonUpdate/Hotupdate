@@ -241,7 +241,6 @@ class UpgradingWindow(QMainWindow):
                 if now - task[0] >= 0:
                     task[1]()
                     expired.append(i)
-                    info('执行队列 ' + str(len(self.pendingTasks)))
             for e in expired:
                 self.pendingTasks.pop(e)
 
@@ -249,9 +248,7 @@ class UpgradingWindow(QMainWindow):
         self.timer.setInterval(5)
         self.timer.timeout.connect(ex)
         self.timer.start()
-        info('定时器已启动')
 
     def delayExecuting(self, func, delay=5):
         task = [int(time.time() * 1000) + delay, func]
         self.pendingTasks.append(task)
-        info('添加任务')

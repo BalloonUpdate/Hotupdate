@@ -84,14 +84,14 @@ class Entry:
 
                 # 如果有需要删除/下载的文件，代表程序需要更新
                 if len(comparer.uselessFiles) > 0 or len(comparer.uselessFolders) > 0 or len(comparer.missingFiles) > 0:
-                    info('需要更新')
+                    info('the followings need updating: ')
                     info('uselessFiles: ' + str(comparer.uselessFiles))
                     info('uselessFolders: ' + str(comparer.uselessFolders))
                     info('missingFiles: ' + str(comparer.missingFiles))
 
                     hotupdate.main(comparer, response1['client'])
                 else:
-                    info('不需要更新')
+                    info('there are nothing need updating')
                     np = NewUpdater(self)
                     np.main(response1, response1['client'])
             finally:
@@ -101,20 +101,20 @@ class Entry:
                 except RuntimeError:
                     pass
         except BasicDisplayableError as e:
-            info('异常: ' + str(e))
+            info('displayable Exception: ' + str(e))
             self.upgradingWindow.es_showMessageBox.emit(e.content, e.title)
             self.exitcode = 1
         except BaseException as e:
-            info('出现了未知错误: ' + traceback.format_exc())
+            info('unknown error occurred: ' + traceback.format_exc())
             self.upgradingWindow.es_showMessageBox.emit(traceback.format_exc(), '出现了未知错误')
             self.exitcode = 1
 
     def main(self):
         self.uiThreadHandle.start()
 
-        info('ui工作')
+        info('qt looping..')
         r = self.qt.exec_()
-        info('ui退出' + str(r))
+        info('qt loop ended with exit code: ' + str(r))
 
         hotupdateSignal = self.exe.parent('updater.hotupdate.signal')
         errorSignal = self.exe.parent('updater.error.signal')
