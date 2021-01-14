@@ -15,7 +15,7 @@ class NotInRightPathError(BasicDisplayableError):
         super(NotInRightPathError, self).__init__()
 
         self.title = '找不到../../.minecraft 文件夹'
-        self.content = f'请确认将本文件放置到{currentPath}/.minecraft/folder/updater.exe 再尝试执行'
+        self.content = f'请确认将本文件放置到.minecraft/updater目录里，再尝试执行'
 
 
 class NoSettingsFileError(BasicDisplayableError):
