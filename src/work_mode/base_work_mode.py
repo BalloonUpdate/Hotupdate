@@ -18,7 +18,7 @@ class BaseWorkMode(ABC):
     def delete(self, file: File):
         if file.isDirectory:
             for f in file:
-                if 'tree' in f:
+                if f.isDirectory:
                     self.delete(f)
                 else:
                     self.deleteList.append(f.relPath(self.basePath))
