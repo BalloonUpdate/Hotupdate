@@ -12,7 +12,7 @@ del dist\%version_text%
 del dist\UpdaterHotupdatePackage.exe
 
 echo Build for %filename%
-pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." -i icon.ico -F -c -n UpdaterHotupdatePackage main.py %1 %2 %3
+pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." -i icon.ico -F -w -n UpdaterHotupdatePackage main.py %1 %2 %3
 echo Build finished!
 
 echo %filename% > dist\%version_text%
