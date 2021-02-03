@@ -28,7 +28,7 @@ class HotUpdateHelper:
 
     def compare(self, remoteFileStructure: list):
         comparer = FileComparer(self.hotupdate)
-        comparer.compareWith(self.hotupdate, remoteFileStructure)
+        comparer.compareWithList(self.hotupdate, remoteFileStructure)
         return comparer
 
     def generateBatchStatements(self, comparer: FileComparer):

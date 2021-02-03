@@ -1,5 +1,3 @@
-from functools import singledispatchmethod
-
 from src.utils.file import File
 
 
@@ -202,23 +200,11 @@ class FileComparer:
         else:
             self.uselessFiles += [pathWithoutDotSlash]
 
-    @singledispatchmethod
-    def compareWith_(self, anyObj):
-        raise RuntimeWarning('no method can be matched, it only receives types of Either SimpleFileObject or list')
-
-    @compareWith_.register
-    def _(self, template: SimpleFileObject, current: File):
+    def compareWithSimpleFileObject(self, current: File, template: SimpleFileObject):
         self.findMissingFiles(current, template)
         self.findUselessFiles(current, template)
 
-    @compareWith_.register
-    def _(self, template: list, current: File):
+    def compareWithList(self, current: File, template: list):
         template2 = {'name': '', 'tree': template}
         self.findMissingFiles(current, SimpleFileObject.FromDict(template2))
         self.findUselessFiles(current, SimpleFileObject.FromDict(template2))
-
-    def compareWith(self, current: File, template: SimpleFileObject):
-        self.compareWith_(template, current)
-
-    def compareWith(self, current: File, template: list):
-        self.compareWith_(template, current)
