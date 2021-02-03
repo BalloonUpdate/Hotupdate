@@ -23,6 +23,7 @@ jobs:
         run: |
           python -m pip install wheel setuptools
           python -m pip install -r requirements.txt
+          python version.py
           C:\hostedtoolcache\windows\Python\3.7.9\x64\Scripts\pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." -i icon.ico -F -w -n UpdaterHotupdatePackage main.py
           dir
 
