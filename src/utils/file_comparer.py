@@ -109,10 +109,10 @@ class FileComparer:
     def __init__(self, basePath):
         super().__init__()
         self.basePath = basePath
-        self.uselessFiles = []
-        self.uselessFolders = []
-        self.missingFiles = {}
-        self.missingFolders = []
+        self.deleteFiles = []
+        self.deleteFolders = []
+        self.downloadFiles = {}
+        self.downloadFolders = []
 
     def findMissingFiles(self, current: File, template: SimpleFileObject):
         """只扫描新增的文件(不包括被删除的)
@@ -169,16 +169,16 @@ class FileComparer:
 
         if template.isDirectory:
             folder = missing.parent.relPath(self.basePath)
-            if folder not in self.missingFolders and folder != '.':
-                self.missingFolders += [folder]
+            if folder not in self.downloadFolders and folder != '.':
+                self.downloadFolders += [folder]
             for t in template:
                 mCorresponding = missing(t.name)
                 if t.isDirectory:
                     self.addMissingFile(mCorresponding, t)
                 else:
-                    self.missingFiles[mCorresponding.relPath(self.basePath)] = [t.length, t.hash]
+                    self.downloadFiles[mCorresponding.relPath(self.basePath)] = [t.length, t.hash]
         else:
-            self.missingFiles[missing.relPath(self.basePath)] = [template.length, template.hash]
+            self.downloadFiles[missing.relPath(self.basePath)] = [template.length, template.hash]
 
     def addUselessFile(self, file: File, dir: str):
         """添加需要删除的文件/目录
@@ -194,11 +194,11 @@ class FileComparer:
                     self.addUselessFile(u, path)
                 else:
                     newPath = path + '/' + u.name
-                    self.uselessFiles += [newPath[2:] if newPath.startswith('./') else newPath]
+                    self.deleteFiles += [newPath[2:] if newPath.startswith('./') else newPath]
 
-            self.uselessFolders += [pathWithoutDotSlash]
+            self.deleteFolders += [pathWithoutDotSlash]
         else:
-            self.uselessFiles += [pathWithoutDotSlash]
+            self.deleteFiles += [pathWithoutDotSlash]
 
     def compareWithSimpleFileObject(self, current: File, template: SimpleFileObject):
         self.findMissingFiles(current, template)

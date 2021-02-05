@@ -26,19 +26,19 @@ class AMode(BaseWorkMode):
         thisPath = parent + ('/' if parent != '' else '') + t['name']
 
         if parent == '':
-            info('进入特殊检测流程: parent:' + parent + '\n' + debug + '=> ')
+            info('D:CheckForSubfolder: parent:' + parent + ' | ' + debug + '=> ')
         else:
             info(debug + '- ')
 
         if 'tree' in t:
-            info('多文件: ' + thisPath)
+            info('D:IsDirectory: ' + thisPath)
             ret = False
             for tt in t['tree']:
                 ret |= self.checkSubFolder(tt, thisPath, debug + '    ')
             return ret
         else:
             ret = self.test(thisPath)
-            info('单文件: ' + thisPath + '       - ' + str(ret))
+            info('D:SingleFile: ' + thisPath + '       - ' + str(ret))
             return ret
 
     def checkSubFolder2(self, d: File, parent: str):
@@ -72,11 +72,11 @@ class AMode(BaseWorkMode):
             judgementA = self.test(dPath)
             judgementB = self.checkSubFolder(t, dir.relPath(base))
 
-            info('文件检测结果: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
+            info('D:Result: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not judgementA and not judgementB:
-                info('无法匹配: ' + str(t))
+                info('D:Skip: ' + str(t))
                 continue
 
             if not dd.exists:  # 文件不存在的话就不用校验直接进行下载

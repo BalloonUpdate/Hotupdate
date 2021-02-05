@@ -1,0 +1,8 @@
+{
+    "url": "http://127.0.0.1:7750",
+    "error_message": "如果出现无法解决的错误\n，点击下方Open重新下载完整客户端\n，点击Ok关闭窗口",
+    "error_help": "start https://www.baidu.com",
+    "visible_time": 500,
+    "width": 500,
+    "height": 400
+}

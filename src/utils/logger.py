@@ -33,8 +33,9 @@ logFile = File(sys.executable).parent.parent('logs/updater.log') if not inDevelo
 logFile.makeParentDirs()
 logFile.clear()
 logger = DebugLogger(logFile)
-logger.info('log file location: '+logFile.path)
+logger.info('Log file location: '+logFile.path)
 
 
 def info(text):
     logger.info(str(text))
+    pass

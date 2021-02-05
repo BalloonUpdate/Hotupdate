@@ -1,9 +1,10 @@
-productName = 'UpdaterHotupdatePackage'
-productVersion = '2.5.2'
+if __name__ == "__main__":
+    from file import File
+    from version import productName, productVersion
 
-output = 'version-file.txt'
+    output = File('version-file.txt')
 
-template = f'''# UTF-8
+    template = f'''# UTF-8
 #
 # For more details about fixed file info 'ffi' see:
 # http://msdn.microsoft.com/en-us/library/ms646997.aspx
@@ -48,12 +49,11 @@ VSVersionInfo(
           ]
         )
       ]),
-    VarFileInfo([VarStruct(u'Translation', [0, 1200])])
+      VarFileInfo([VarStruct(u'Translation', [0, 1200])
+    ])
   ]
 )
 '''
 
-with open(output, "w+", encoding="utf-8") as f:
-    f.write(template)
-
-print(productName+'-'+productVersion)
+    with open(output.path, "w+", encoding="utf-8") as f:
+        f.write(template)

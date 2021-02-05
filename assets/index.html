@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+
+	<link rel="stylesheet" type="text/css" href="style.css" />
+	<script src="jquery-3.5.1.min.js"></script>
+	<script src="updater.js"></script>
+
+	<script>
+		q = null
+
+		function output(text) {
+			if(q==null)
+				q = $('#q')
+			q.append('<div>'+text+'</div>')
+			$(document).scrollTop($(document).height());
+		}
+
+		function setBody(str){
+			// output(str)
+		}
+
+		function appendMessage(text) {
+			// output(text)
+		}
+
+
+		callback = {
+			init: () => {
+				output('loaded')
+				updaterApi.setTitle('正在连接服务器')
+				
+				// pywebview.api.minimize()
+				// updaterApi.close()
+				//alert(navigator.userAgent)
+			},
+			check_for_upgrade: (url) => {
+				output('连接到: '+url)
+			},
+			calculate_differences_for_upgrade: () => {
+				output('计算自身差异')
+			},
+			whether_upgrade: (isupgrade) => {
+				output('是否需要更新: '+isupgrade)
+				
+			},
+			
+			upgrading_old_files: (paths) => {
+				output('需要删除: '+paths.length)
+			},
+			upgrading_new_files: (paths) => {
+				output('需要下载: '+paths.length)
+			},
+			upgrading_before_downloading: () => { // 调用一次
+				output('进入下载阶段')
+			},
+			upgrading_downloading: (file, bytes, total) => {
+				if(bytes==-1 && total==-1)
+					output('准备开始下载: '+file)
+				else if(bytes==-2 && total==-2)
+					output('下载完毕: '+file)
+				else
+					output(file+': '+parseInt(bytes/1024)+' / '+parseInt(total/1024))
+			},
+			upgrading_before_installing: () => {
+				output('开始安装更新')
+			},
+
+
+			check_for_update: (url) => {
+				output('检测客户端更新')
+			},
+			calculate_differences_for_update: () => {
+				output('计算客户端文件差异')
+			},
+			updating_old_files: (paths) => {
+				output('要删除的文件: '+paths.length)
+			},
+			updating_new_files: (paths) => {
+				output('要下载的文件: '+paths.length)
+			},
+			updating_before_removing: () => {
+				output('即将开始删除文件')
+			},
+			updating_removing: (file) => {
+				output('干掉: '+file)
+			},
+			updating_before_downloading: () => {
+				output('现在开始下载文件阶段')
+			},
+			updating_downloading: (file, bytes, total) => {
+				if(bytes==-1 && total==-1)
+					output('准备开始下载: '+file)
+				else if(bytes==-2 && total==-2)
+					output('下载完毕: '+file)
+				else
+					output(file+': '+parseInt(bytes/1024)+' / '+parseInt(total/1024))
+			},
+
+			cleanup: () => {
+				output('清理退出')
+			},
+
+			alert: (text) => {
+				alert(text)
+			},
+			on_error: (type, detail, trackback) => {
+				// if(type=='displayable_error')
+				// if(type=='unknown_error')
+				alert('出现异常: '+type+'\n\n'+detail+'\n')
+			}
+
+		}
+	</script>
+	
+	<style>
+		body {
+			background-color: rgb(170, 170, 170);
+		}
+	</style>
+</head>
+
+<body>
+	<div id="m">m</div>
+	<div id="q">q</div>
+</body>
+
+</html>

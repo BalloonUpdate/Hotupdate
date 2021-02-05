@@ -7,7 +7,7 @@ import requests
 
 from src.common import inDevelopment
 from src.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
-from src.utils.file import File
+from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.file_comparer import FileComparer
 from src.utils.logger import info
 
@@ -29,18 +29,35 @@ class HotUpdateHelper:
     def compare(self, remoteFileStructure: list):
         comparer = FileComparer(self.hotupdate)
         comparer.compareWithList(self.hotupdate, remoteFileStructure)
+
+        # 跳过未知的调试信息(可能是CEFPYTHON生成的，但又没法删除
+        exclusions = [
+            'debug.log',
+            'blob_storage',
+            'webrtc_event_logs'
+        ]
+
+        for ex in exclusions:
+            exFile = self.e.exe.parent(ex)
+            exPath = exFile.relPath(self.hotupdate)
+
+            comparer.deleteFiles = [f for f in comparer.deleteFiles if not f.startswith(exPath)]
+            comparer.deleteFolders = [f for f in comparer.deleteFolders if not f.startswith(exPath)]
+
+            info('Exclude: ' + exPath)
+
         return comparer
 
     def generateBatchStatements(self, comparer: FileComparer):
         # 准备生成用于热替换的batch脚本
         batchText = '''
         @echo off
-        echo 准备中..
+        echo Preparing..
         
         SET /a count=20
         SET tempFile=.temp.txt
         
-        REM 循环检测
+        REM waiting utill UpdaterHotupdatePackage.exe exited
         :check
         tasklist.exe | findstr UpdaterHotupdatePackage.exe > %tempFile%
         set /p Running=<%tempFile%
@@ -55,16 +72,15 @@ class HotUpdateHelper:
         )
         
         REM del %tempFile%
-        
         '''
 
         # 删除旧文件
-        batchText += f'echo 删除旧文件({len(comparer.uselessFiles) + len(comparer.uselessFolders)})\n'
-        for d in comparer.uselessFiles:
+        batchText += f'echo Remove({len(comparer.deleteFiles) + len(comparer.deleteFolders)})\n'
+        for d in comparer.deleteFiles:
             file = self.hotupdate[d]
             delCmd = 'del /F /S /Q ' if file.isFile else 'rmdir /S /Q '
             batchText += delCmd + '"' + file.windowsPath + '"\n'
-        for d in comparer.uselessFolders:
+        for d in comparer.deleteFolders:
             file = self.hotupdate[d]
             batchText += f'rmdir /S /Q "{file.windowsPath}"\n'
 
@@ -72,9 +88,9 @@ class HotUpdateHelper:
         source = self.temporalDir.windowsPath + '\\*'
         destination = self.hotupdate.windowsPath + '\\'
 
-        batchText += f'echo 复制新文件({len(comparer.missingFiles)})\n'
+        batchText += f'echo Install({len(comparer.downloadFiles)})\n'
         batchText += f'xcopy /E /R /Y "{source}" "{destination}" \n'
-        batchText += 'echo 清理临时目录\n'
+        batchText += 'echo Cleanup\n'
         batchText += 'rmdir /S /Q "' + self.temporalDir.windowsPath + '"\n'
         batchText += 'echo done!!\n'
         batchText += 'exit\n'
@@ -89,97 +105,57 @@ class HotUpdateHelper:
     def generateStartupCommand(self):
         return f'cd /D "{self.temporalScript.parent.windowsPath}" && start {self.temporalScript.name}'
 
-    def downloadFile(self, Url: str, file: File, progressCallback, total, downloaded, expectantLength):
-        try:
-            r = requests.get(Url, stream=True, timeout=5)
-            if r.status_code != 200:
-                raise UnexpectedHttpCodeError(Url, r.status_code, r.text)
-
-            recv = 0
-            includeContentLength = 'Content-Length' in r.headers
-            fileSize = int(r.headers.get("Content-Length")) if includeContentLength else expectantLength
-            chunkSize = 1024 * 64
-
-            file.makeParentDirs()
-            f = open(file.path, 'xb+')
-
-            for chunk in r.iter_content(chunk_size=chunkSize):
-                f.write(chunk)
-                downloaded += len(chunk)
-                recv += len(chunk)
-                progressCallback(downloaded, total, recv, fileSize)
-
-            f.close()
-
-            return downloaded
-        except requests.exceptions.ConnectionError as e:
-            raise FailedToConnectError(e, Url)
-        except requests.exceptions.ChunkedEncodingError as e:
-            raise UnexpectedTransmissionError(e, Url)
-
-    def main(self, comparer:FileComparer, clientSettings):
-        upgradingWindow = self.e.upgradingWindow
+    def main(self, comparer:FileComparer):
+        webview: UpdaterWebView = self.e.webview
 
         # 生成热更新替换脚本
         batchText = self.generateBatchStatements(comparer)
         startupText = self.generateStartupCommand()
 
-        # 初始化窗口
-        upgradingWindow.es_setWindowWidth.emit(clientSettings['width'])
-        upgradingWindow.es_setWindowHeight.emit(clientSettings['height'])
-        upgradingWindow.es_setShow.emit(True)
-        # upgradingWindow.es_setProgressStatus.emit(1)
-        # upgradingWindow.es_setProgressStatus.emit(0)
-
-        time.sleep(0.3)
-        upgradingWindow.es_setWindowTitle.emit('正在更新文件..')
-        upgradingWindow.es_setProgressVisible.emit(True)
-        upgradingWindow.es_setProgressRange.emit(0, 1000)
-        upgradingWindow.es_setProgressValue.emit(1000)
+        webview.invokeCallback('upgrading_before_downloading')
 
         # 创建缺失的目录
-        for mf in comparer.missingFolders:
+        for mf in comparer.downloadFolders:
             self.workDir(mf).mkdirs()
 
-        # 加载进列表里
-        for df in comparer.missingFiles:
-            upgradingWindow.es_addItem.emit(df, '等待下载 ' + df)
-            time.sleep(0.01)
-
-        # 计算总下载量
-        totalKBytes = 0
-        downloadedKByte = 0
-        for df in comparer.missingFiles.values():
-            totalKBytes += df[0]
-
         # 下载新文件
-        for k, v in comparer.missingFiles.items():
-            df = k
-            url = self.e.upgradeSource + '/' + df
-            file = self.temporalDir(df)
+        for path, length in comparer.downloadFiles.items():
+            url = self.e.upgradeSource + '/' + path
+            file = self.temporalDir(path)
+
+            # 开始下载
             info('downloading: ' + file.name)
+            webview.invokeCallback('upgrading_downloading', path, -1, -1)
 
-            upgradingWindow.es_setItemBold.emit(df, True)
+            try:
+                r = requests.get(url, stream=True, timeout=5)
+                if r.status_code != 200:
+                    raise UnexpectedHttpCodeError(url, r.status_code, r.text)
 
-            def progressCallback(recvFileBytes, totalFileBytes, recv, fileSize):
-                progress = recvFileBytes / totalFileBytes
-                value = int(progress * 1000)
-                upgradingWindow.es_setProgressValue.emit(value)
-                upgradingWindow.es_setWindowTitle.emit('正在更新 ' + "{:.0f}%".format(progress * 100))
+                received = 0
+                chunkSize = 1024 * 64
 
-                t1 = format(recv / fileSize * 100, '<4.1f') + '% '
-                t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(recv / 1024, fileSize / 1024)
-                upgradingWindow.es_setItemText.emit(df, f'{t1} {df}  ({t2})', False)
+                file.makeParentDirs()
+                with open(file.path, 'xb+') as f:
+                    for chunk in r.iter_content(chunk_size=chunkSize):
+                        f.write(chunk)
+                        received += len(chunk)
+                        webview.invokeCallback('upgrading_downloading', path, received, length[0])
 
-                # info(t1 + ' ' + t2 + '  ' + df)
+            except requests.exceptions.ConnectionError as e:
+                raise FailedToConnectError(e, url)
+            except requests.exceptions.ChunkedEncodingError as e:
+                raise UnexpectedTransmissionError(e, url)
 
-            upgradingWindow.es_setItemText.emit(df, f'100% {df}', True)
+            webview.invokeCallback('upgrading_downloading', path, -2, -2)
 
-            expectantLength = v[0]
-            downloadedKByte = self.downloadFile(url, file, progressCallback, totalKBytes, downloadedKByte, expectantLength)
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:
             f.write(batchText)
+
+        webview.invokeCallback('upgrading_before_installing')
+
+        time.sleep(1)
 
         # 执行
         subprocess.call(startupText, shell=True)
@@ -187,8 +163,5 @@ class HotUpdateHelper:
         # 返回2
         self.e.exitcode = 2
 
-        # 关闭窗口
-        upgradingWindow.es_close.emit()
-        self.e.updatingWindow.es_close.emit()
         # temporalDir.delete() # 由批处理文件删除
         # temporalScript.delete() # 由批处理文件删除

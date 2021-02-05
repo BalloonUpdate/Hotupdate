@@ -7,6 +7,7 @@ import requests
 
 from src.common import inDevelopment
 from src.exception.displayable_error import UnexpectedHttpCodeError
+from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.logger import info
 from src.work_mode.mode_a import AMode
 from src.work_mode.mode_b import BMode
@@ -16,19 +17,15 @@ class NewUpdater:
     def __init__(self, entry):
         self.e = entry
 
-    def main(self, response1, clientSettings):
-        updatingWindow = self.e.updatingWindow
+    def main(self, response1, settingsJson):
         workDir = self.e.workDir
+        webview: UpdaterWebView = self.e.webview
 
-        windowWidth = clientSettings['width']
-        windowHeight = clientSettings['height']
-        visibleTime = clientSettings['visible_time']
-
-        updatingInfo = response1['server']
-        mode = updatingInfo['mode_a']
-        regexes = updatingInfo['regexes']
-        regexesMode = updatingInfo['match_all_regexes']
-        command = updatingInfo['command_before_exit']
+        re = response1['server']
+        mode = re['mode_a']
+        regexes = re['regexes']
+        regexesMode = re['match_all_regexes']
+        command = re['command_before_exit']
 
         info(f'ModeA: {mode}')
         info(f'Regexes: {regexes}')
@@ -36,86 +33,77 @@ class NewUpdater:
         info(f'Command: {command}')
 
         # 检查最新版本
-        response3 = self.e.httpGetRequest(self.e.updateApi)
-        remoteFilesStructure = response3
+        webview.invokeCallback('check_for_update', self.e.updateApi)
+        remoteFilesStructure = self.e.httpGetRequest(self.e.updateApi)
 
-        # 初始化窗口
-        updatingWindow.es_setWindowWidth.emit(windowWidth)
-        updatingWindow.es_setWindowHeight.emit(windowHeight)
-        updatingWindow.es_setWindowCenter.emit()
-        updatingWindow.es_setShow.emit(True)
-        time.sleep(0.3)
-
-        rootDir = workDir if not inDevelopment else workDir('debugging-dir')
+        rootDir = workDir if not inDevelopment else workDir('debug-dir')
         rootDir.mkdirs()
 
         if inDevelopment:
-            info('文件夹已被重定向到: ' + rootDir.path)
+            info('InDevelopmentMode: ' + rootDir.path)
 
-        # 计算要修改的文件
+        # 计算文件差异
+        webview.invokeCallback('calculate_differences_for_update')
         work = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
 
-        # 加载进列表里
-        updatingWindow.es_setWindowTitle.emit('正在加载..')
-        for df in work.deleteList:
-            updatingWindow.es_addItem.emit(df, '等待删除 ' + df)
-            time.sleep(0.01)
-        for df in work.downloadList:
-            updatingWindow.es_addItem.emit(df, '等待下载 ' + df)
-            time.sleep(0.01)
+        newFiles = [{filename: length} for filename, length in work.downloadList.items()]
+        oldFiles = [file for file in work.deleteList]
+
+        webview.invokeCallback('updating_old_files', oldFiles)
+        webview.invokeCallback('updating_new_files', newFiles)
 
         # 删除旧文件
-        updatingWindow.es_setProgressStatus.emit(0)  # 绿色
-        updatingWindow.es_setWindowTitle.emit('删除旧文件..')
-        totalToDelete = len(work.deleteList)  # 计算出总共要删除的文件数
-        deletedCount = 0
-        for df in work.deleteList:
-            deletedCount += 1
-            updatingWindow.es_setProgressValue.emit(1000 - int(deletedCount / totalToDelete * 1000))
-            updatingWindow.es_setItemBold.emit(df, True)
-            updatingWindow.es_setItemText.emit(df, '已删除: ' + df, True)
-            info('正在删除文件: '+df)
-            rootDir(df).delete()
+        webview.invokeCallback('updating_before_removing')
+
+        for path in work.deleteList:
+            info('Deleted: '+path)
+            webview.invokeCallback('updating_removing', path)
+            rootDir(path).delete()
             time.sleep(0.02 + random.random() * 0.03)
 
         # 下载新文件
-        updatingWindow.es_setWindowTitle.emit('下载新文件..')
-        totalKBytes = 0  # 计算出总下载量(字节)
-        for length in work.downloadMap.values():
-            totalKBytes += length
+        webview.invokeCallback('updating_before_downloading')
 
         # 开始下载
-        downloadedBytes = 0
-        for df in work.downloadList:
-            file = rootDir(df)
-            updatingWindow.es_setItemBold.emit(df, True)
-            downloadedBytes = self.downloadFile(self.e.updateSource+'/'+df, file, df, downloadedBytes, totalKBytes, work.downloadMap[df])
+        for path, length in work.downloadList.items():
+            file = rootDir(path)
+            url = self.e.updateSource + '/' + path
 
-        updatingWindow.es_setWindowTitle.emit('所有文件已是最新')
+            info('Downloading: ' + path + ' on ' + url)
+            webview.invokeCallback('updating_downloading', path, -1, -1)
+
+            r = requests.get(url, stream=True, timeout=5)
+            if r.status_code != 200:
+                raise UnexpectedHttpCodeError(url, r.status_code, r.text)
+
+            chunkSize = 1024 * 64
+            received = 0
+
+            file.makeParentDirs()
+            file.delete()
+
+            with open(file.path, 'wb+') as f:
+                for chunk in r.iter_content(chunk_size=chunkSize):
+                    f.write(chunk)
+                    received += len(chunk)
+                    webview.invokeCallback('updating_downloading', path, received, length)
+
+            webview.invokeCallback('updating_downloading', path, -2, -2)
 
         # 如果被打包就执行一下命令
         if getattr(sys, 'frozen', False) and command != '':
             subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
 
-        if visibleTime >= 0:
-            time.sleep(visibleTime / 1000)
-            updatingWindow.es_close.emit()
+        webview.invokeCallback('cleanup')
 
-        updatingWindow.es_close.emit()
-        self.e.upgradingWindow.es_close.emit()
+        if settingsJson['visible_time'] >= 0:
+            time.sleep(settingsJson['visible_time'] / 1000)
 
-        info('工作线程退出')
+        info('Webview Cleanup')
 
-    def calculateChanges(self, mode, rootDir, regexes, regexesMode, structure):
+    @staticmethod
+    def calculateChanges(mode, rootDir, regexes, regexesMode, structure):
         """计算要修改的文件"""
-
-        updatingWindow = self.e.updatingWindow
-
-        updatingWindow.es_setWindowTitle.emit('正在检查更新..')
-        updatingWindow.es_setProgressVisible.emit(True)
-        updatingWindow.es_setProgressRange.emit(0, 1000)
-        updatingWindow.es_setProgressValue.emit(1000)
-        updatingWindow.es_setProgressStatus.emit(1)  # 黄色
 
         if mode:
             workMode = AMode(rootDir, regexes, regexesMode)
@@ -123,45 +111,7 @@ class NewUpdater:
             workMode = BMode(rootDir, regexes, regexesMode)
 
         workMode.scan(rootDir, structure)
+
         return workMode
 
-    def downloadFile(self, url, file, filePath, downloadedBytes, totalKBytes, expectantLength):
-        updatingWindow = self.e.updatingWindow
-        r = requests.get(url, stream=True, timeout=5)
 
-        info('正在下载: ' + filePath+' on '+url)
-
-        if r.status_code != 200:
-            if r.status_code != 200:
-                raise UnexpectedHttpCodeError(url, r.status_code, r.text)
-
-        includeContentLength = 'Content-Length' in r.headers
-        totalSize = int(r.headers.get("Content-Length")) if includeContentLength else expectantLength
-        chunkSize = 1024 * 64
-        received = 0
-
-        file.makeParentDirs()
-        file.delete()
-        f = open(file.path, 'wb+')
-
-        for chunk in r.iter_content(chunk_size=chunkSize):
-            f.write(chunk)
-            received += len(chunk)
-
-            downloadedBytes += len(chunk)
-            updatingWindow.es_setProgressValue.emit(int(downloadedBytes / totalKBytes * 1000))
-
-            t1 = format(received / totalSize * 100, '<4.1f') + '% '
-            t2 = "{:<5.1f} Kb / {:<5.1f} Kb".format(received / 1024, totalSize / 1024)
-            updatingWindow.es_setItemText.emit(filePath, f'{t1} {filePath}  ({t2})', False)
-            updatingWindow.es_setWindowTitle.emit('下载新文件 ' + "{:.0f}%".format(downloadedBytes / totalKBytes * 100))
-
-        if received == totalSize:
-            updatingWindow.es_setItemText.emit(filePath, '100%  ' + filePath, True)
-
-        if totalSize == 0:
-            updatingWindow.es_setItemText.emit(filePath, '100%  ' + filePath, True)
-
-        f.close()
-
-        return downloadedBytes

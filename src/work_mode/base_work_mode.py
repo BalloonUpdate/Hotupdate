@@ -10,8 +10,7 @@ class BaseWorkMode(ABC):
         super().__init__()
         self.basePath: File = basePath
         self.deleteList: list = []
-        self.downloadList: list = []
-        self.downloadMap: dict = {}
+        self.downloadList: dict = {}
         self.regexes: list = regexes
         self.regexesMode: bool = regexesMode  # True: AND mode, False: Or mode
 
@@ -36,12 +35,10 @@ class BaseWorkMode(ABC):
                     self.download(n, dd)
                 else:
                     relPath = dd.relPath(self.basePath)
-                    self.downloadList.append(relPath)
-                    self.downloadMap[relPath] = n['length']
+                    self.downloadList[relPath] = n['length']
         else:
             relPath = dir.relPath(self.basePath)
-            self.downloadList.append(relPath)
-            self.downloadMap[relPath] = node['length']
+            self.downloadList[relPath] = node['length']
 
     def test(self, path: str) -> bool:
         """测试指定的目录是否能通过正则表达式的匹配
@@ -69,6 +66,7 @@ class BaseWorkMode(ABC):
 
     def excludeSelf(self):
         """将可执行文件本身给排除掉，主要用于打包以后的防误删机制"""
+
         selfExe = File(sys.executable).relPath(self.basePath)
         selfExeParent = File(sys.executable).parent.relPath(self.basePath)
 
