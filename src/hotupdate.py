@@ -125,7 +125,7 @@ class HotUpdateHelper:
 
             # 开始下载
             info('downloading: ' + file.name)
-            webview.invokeCallback('upgrading_downloading', path, -1, -1)
+            webview.invokeCallback('upgrading_downloading', path, 0, 0, length[0])
 
             try:
                 r = requests.get(url, stream=True, timeout=5)
@@ -140,14 +140,13 @@ class HotUpdateHelper:
                     for chunk in r.iter_content(chunk_size=chunkSize):
                         f.write(chunk)
                         received += len(chunk)
-                        webview.invokeCallback('upgrading_downloading', path, received, length[0])
+                        webview.invokeCallback('upgrading_downloading', path, len(chunk), received, length[0])
 
             except requests.exceptions.ConnectionError as e:
                 raise FailedToConnectError(e, url)
             except requests.exceptions.ChunkedEncodingError as e:
                 raise UnexpectedTransmissionError(e, url)
 
-            webview.invokeCallback('upgrading_downloading', path, -2, -2)
 
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:

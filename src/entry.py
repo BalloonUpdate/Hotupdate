@@ -82,8 +82,9 @@ class Entry:
                 info('uselessFolders: ' + str(comparer.deleteFolders))
                 info('missingFiles: ' + str(comparer.downloadFiles))
 
-                newFiles = [{filename: length} for filename, length in comparer.downloadFiles.items()]
-                newFiles += [{file, -1} for file in comparer.downloadFolders]
+                # filename, length, hash
+                newFiles = [[filename, length[0], length[1]] for filename, length in comparer.downloadFiles.items()]
+                newFiles += [[file, -1] for file in comparer.downloadFolders]
                 oldFiles = [[file, True] for file in comparer.deleteFiles]
                 oldFiles += [[file, False] for file in comparer.deleteFolders]
 
@@ -125,6 +126,8 @@ class Entry:
 
         self.webview = UpdaterWebView(self, onStart=onStart, width=width, height=height)
         self.webview.start()
+
+        info('Webview Exited with exit code '+str(self.exitcode))
 
         # ------------
 

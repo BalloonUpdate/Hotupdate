@@ -46,7 +46,7 @@ class NewUpdater:
         webview.invokeCallback('calculate_differences_for_update')
         work = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
 
-        newFiles = [{filename: length} for filename, length in work.downloadList.items()]
+        newFiles = [[filename, length] for filename, length in work.downloadList.items()]
         oldFiles = [file for file in work.deleteList]
 
         webview.invokeCallback('updating_old_files', oldFiles)
@@ -70,7 +70,7 @@ class NewUpdater:
             url = self.e.updateSource + '/' + path
 
             info('Downloading: ' + path + ' on ' + url)
-            webview.invokeCallback('updating_downloading', path, -1, -1)
+            webview.invokeCallback('updating_downloading', path, 0, 0, length)
 
             r = requests.get(url, stream=True, timeout=5)
             if r.status_code != 200:
@@ -81,14 +81,11 @@ class NewUpdater:
 
             file.makeParentDirs()
             file.delete()
-
             with open(file.path, 'wb+') as f:
                 for chunk in r.iter_content(chunk_size=chunkSize):
                     f.write(chunk)
                     received += len(chunk)
-                    webview.invokeCallback('updating_downloading', path, received, length)
-
-            webview.invokeCallback('updating_downloading', path, -2, -2)
+                    webview.invokeCallback('updating_downloading', path, len(chunk), received, length)
 
         # 如果被打包就执行一下命令
         if getattr(sys, 'frozen', False) and command != '':
