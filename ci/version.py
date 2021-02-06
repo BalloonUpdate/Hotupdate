@@ -1,7 +1,7 @@
 import sys
 
 productName = 'UpdaterHotupdatePackage'
-productVersion = '2.6dev0'
+productVersion = '2.6alpha1'
 
 
 if __name__ == "__main__":
