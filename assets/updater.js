@@ -1,3 +1,11 @@
+var pywebview = pywebview || {
+    api: {
+        setTitle: (title) => {
+            $('title').html(title)
+        }
+    }
+}
+
 var updaterApi = {
     setTitle: (title) => {
         pywebview.api.setTitle(title)
