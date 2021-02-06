@@ -1,5 +1,5 @@
 from src.utils.file import File
-from src.utils.logger import info
+from src.utils.logger import logger
 from src.work_mode.base_work_mode import BaseWorkMode
 
 
@@ -26,19 +26,19 @@ class AMode(BaseWorkMode):
         thisPath = parent + ('/' if parent != '' else '') + t['name']
 
         if parent == '':
-            info('D:CheckForSubfolder: parent:' + parent + ' | ' + debug + '=> ')
+            logger.debug('D:CheckForSubfolder: parent:' + parent + ' | ' + debug + '=> ')
         else:
-            info(debug + '- ')
+            logger.debug(debug + '- ')
 
         if 'tree' in t:
-            info('D:IsDirectory: ' + thisPath)
+            logger.debug('D:IsDirectory: ' + thisPath)
             ret = False
             for tt in t['tree']:
                 ret |= self.checkSubFolder(tt, thisPath, debug + '    ')
             return ret
         else:
             ret = self.test(thisPath)
-            info('D:SingleFile: ' + thisPath + '       - ' + str(ret))
+            logger.debug('D:SingleFile: ' + thisPath + '       - ' + str(ret))
             return ret
 
     def checkSubFolder2(self, d: File, parent: str):
@@ -72,11 +72,11 @@ class AMode(BaseWorkMode):
             judgementA = self.test(dPath)
             judgementB = self.checkSubFolder(t, dir.relPath(base))
 
-            info('D:Result: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
+            logger.debug('D:Result: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not judgementA and not judgementB:
-                info('D:Skip: ' + str(t))
+                logger.debug('D:Skip: ' + str(t))
                 continue
 
             if not dd.exists:  # 文件不存在的话就不用校验直接进行下载

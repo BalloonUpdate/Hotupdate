@@ -26,7 +26,7 @@ class UpdaterWebView:
         info('Using '+('internal' if usingInternalAssets else 'external')+' Assets')
         info('Load Assets: '+url)
 
-        self.window: Window = webview.create_window('Hello world', url=url, js_api=self, width=width, height=height, text_select=True)
+        self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height, text_select=True)
         self.onStart = onStart
 
         self.expose()
@@ -66,7 +66,7 @@ class UpdaterWebView:
         try:
             self.window.destroy()
         except KeyError:
-            info('KeyError')
+            logger.warn('KeyError')
             pass
 
     def alert(self, message):
@@ -90,12 +90,12 @@ class UpdaterWebView:
         statement = rf'callback.{name}{str(convert(args))}'
         statement = statement.replace('True', 'true')
         statement = statement.replace('False', 'false')
-        info('statement: ' + statement)
+        logger.debug('Statement: ' + statement)
         try:
             self.window.evaluate_js(statement)
         except:
-            info('+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            info(traceback.format_exc())
+            logger.error('+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
+            logger.error(traceback.format_exc())
 
     # def setSize(self, width, height):
     #     self.window.resize(width, height)

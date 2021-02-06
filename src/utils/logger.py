@@ -12,7 +12,7 @@ class DebugLogger(logging.Logger):
         formatter = self.getFormatter()
 
         self.fileHandler = logging.FileHandler(file.path, encoding="utf-8")
-        self.fileHandler.setLevel(logging.INFO)
+        self.fileHandler.setLevel(logging.DEBUG)
         self.fileHandler.setFormatter(formatter)
 
         self.streamHandler = logging.StreamHandler(sys.stdout)
