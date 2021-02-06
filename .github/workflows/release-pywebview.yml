@@ -50,4 +50,4 @@ jobs:
         with:
           file: dist/*
           draft: false
-          tags: false        
+          tags: true        
