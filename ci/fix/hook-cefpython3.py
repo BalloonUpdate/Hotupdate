@@ -25,7 +25,7 @@ PYINSTALLER_MIN_VERSION = "3.2.1"
 # > from PyInstaller.utils.hooks import get_package_paths
 # > get_package_paths("cefpython3")
 CEFPYTHON3_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(sys.executable)),
+    os.path.dirname(sys.executable),
     'Lib', 'site-packages', 'cefpython3')
 
 if platform.system() == "Windows":
