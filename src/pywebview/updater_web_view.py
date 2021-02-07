@@ -1,5 +1,6 @@
 import json
 import logging
+import subprocess
 import sys
 import time
 import traceback
@@ -68,6 +69,13 @@ class UpdaterWebView:
         except KeyError:
             logger.warn('KeyError')
             pass
+
+    def execute(self, command):
+        try:
+            subprocess.call(command, shell=True)
+        except Exception as e:
+            logger.error(e)
+            logger.error(traceback.format_exc())
 
     def alert(self, message):
         self.invokeCallback('alert', message)

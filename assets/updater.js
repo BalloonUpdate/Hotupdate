@@ -21,5 +21,8 @@ var updaterApi = {
     },
     close: () => {
         pywebview.api.close()
+    },
+    execute: (command) => {
+        pywebview.api.execute(command)
     }
 }
