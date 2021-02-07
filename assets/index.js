@@ -158,5 +158,7 @@ var callback = {
     },
     on_error: (type, detail, trackback) => {
         alert('出现异常: '+type+'\n\n'+detail+'\n')
+        if(confirm('是否需要打开服务器官网下载完整客户端?'))
+            updaterApi.execute('start https://baidu.com')
     }
 }
