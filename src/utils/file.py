@@ -5,7 +5,7 @@ import hashlib
 import pathlib
 
 
-# 2020年12月16日23:25:45
+# 1.1 2021年2月7日18:58:49
 class File:
     def __init__(self, filePath):
         if not isinstance(filePath, str):
@@ -58,10 +58,10 @@ class File:
     @property
     def content(self):
         if not self.exists:
-            raise FileNotFoundError(f"'{self.path}' is not found")
+            raise FileNotFoundError(f"'{self.path}' was not found")
 
         if self.isDirectory:
-            raise IsADirectoryError(f"'{self.path}' is not a file")
+            raise IsADirectoryError(f"'{self.path}' was not a file")
 
         with open(self.path, "r", encoding="utf-8") as f:
             return f.read()
@@ -69,7 +69,7 @@ class File:
     @content.setter
     def content(self, content):
         if self.exists and self.isDirectory:
-            raise IsADirectoryError(f"'{self.path}' is not a file")
+            raise IsADirectoryError(f"'{self.path}' was not a file")
 
         with open(self.path, "w+", encoding="utf-8") as f:
             f.write(content)
@@ -81,20 +81,20 @@ class File:
     @property
     def length(self):
         if not self.exists:
-            raise FileNotFoundError(f"'{self.path}' is not found")
+            raise FileNotFoundError(f"'{self.path}' was not found")
 
         if not self.isFile:
-            raise IsADirectoryError(f"'{self.path}' is not a file")
+            raise IsADirectoryError(f"'{self.path}' was not a file")
 
         return os.path.getsize(self.path)
 
     @property
     def files(self):
         if not self.exists:
-            raise FileNotFoundError(f"'{self.path}' is not found")
+            raise FileNotFoundError(f"'{self.path}' was not found")
 
         if self.isFile:
-            raise NotADirectoryError(f"'{self.path}' is not a Directory")
+            raise NotADirectoryError(f"'{self.path}' was not a Directory")
 
         files = [
             File(os.path.join(self.path, f))
@@ -106,7 +106,7 @@ class File:
     @property
     def isDirty(self):
         if not self.exists:
-            raise FileNotFoundError(f"'{self.path}' is not found")
+            raise FileNotFoundError(f"'{self.path}' was not found")
 
         if self.isFile:
             return self.length > 0
@@ -127,7 +127,7 @@ class File:
     def copyTo(self, dist):
         dist = dist if isinstance(dist, File) else File(dist)
 
-        assert self.exists, f"{self.path} is not found"
+        assert self.exists, f"{self.path} was not found"
 
         if dist.exists:
             dist.delete()
@@ -140,7 +140,7 @@ class File:
     def moveTo(self, dist):
         dist = dist if isinstance(dist, File) else File(dist)
 
-        assert self.exists, f"{self.path} is not found"
+        assert self.exists, f"{self.path} was not found"
 
         if dist.exists:
             dist.delete()
@@ -179,17 +179,17 @@ class File:
 
     def append(self, relPath):
         if self.isFile:
-            raise NotADirectoryError(f"'{self.path}' is not a Directory, can not get content in subfolder")
+            raise NotADirectoryError(f"'{self.path}' was not a Directory, can not get content in subfolder")
 
         return File(os.path.join(self.path, relPath))
 
     @property
     def sha1(self):
         if not self.exists:
-            raise FileNotFoundError(f"'{self.path}' is not found")
+            raise FileNotFoundError(f"'{self.path}' was not found")
 
         if self.isDirectory:
-            raise IsADirectoryError(f"'{self.path}' is not a file")
+            raise IsADirectoryError(f"'{self.path}' was not a file")
 
         with open(self.path, 'rb') as f:
             sha1obj = hashlib.sha1()
