@@ -157,8 +157,10 @@ var callback = {
         alert(text)
     },
     on_error: (type, detail, trackback) => {
-        alert('出现异常: '+type+'\n\n'+detail+'\n')
-        if(confirm('是否需要打开服务器官网下载完整客户端?'))
+        alert('出现异常: '+type+'\n\n'+detail)
+        if(type=='PythonException' && confirm('是否显示异常调用栈?'))
+            alert(trackback)
+        else if(confirm('是否需要打开服务器官网下载完整客户端?'))
             updaterApi.execute('start https://baidu.com')
     }
 }

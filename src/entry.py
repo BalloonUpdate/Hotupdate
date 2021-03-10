@@ -102,11 +102,11 @@ class Entry:
 
         except BasicDisplayableError as e:
             logger.error('Displayable Exception: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', type(e).__name__, e.title + ': ' + e.content, traceback.format_exc())
+            self.webview.invokeCallback('on_error', 'DisplayableException', e.title + ': ' + e.content, traceback.format_exc())
             self.exitcode = 1
         except BaseException as e:
             logger.error('Unknown error occurred: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', type(e).__name__, 'Unknown error occurred', traceback.format_exc())
+            self.webview.invokeCallback('on_error', 'PythonException', '----------Python exception raised----------\n'+str(type(e))+'\n'+str(e), traceback.format_exc())
             self.exitcode = 1
         finally:
             self.webview.close()
