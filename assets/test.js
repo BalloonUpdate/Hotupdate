@@ -52,12 +52,45 @@ async function test_(isupgrade) {
             '.minecraft/mods/keng34343434.jar',
             '.minecraft/mods/updater-php - 快捷方式223123213.jar',
             '.minecraft/mods/vue-2.6.12343434.js',
+            '.minecraft/launcher_profiles.json',
+            '.minecraft/output-client.log',
+            '.minecraft/debug.log',
         ]
         let new_files = [
             ['.minecraft/mods/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
             ['.minecraft/mods/keng.jar', 36553],
             ['.minecraft/mods/updater-php - 快捷方式.jar', 543546],
             ['.minecraft/mods/vue-2.6.12.js', 37246],
+            ['.minecraft/mods2/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods2/keng.jar', 36553],
+            ['.minecraft/mods2/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods2/vue-2.6.12.js', 37246],
+            ['.minecraft/mods3/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods33/keng.jar', 36553],
+            ['.minecraft/mods3/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods3/vue-2.6.12.js', 37246],
+            ['.minecraft/mods4/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods4/keng.jar', 36553],
+            ['.minecraft/mods4/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods4/vue-2.6.12.js', 37246],
+            ['.minecraft/mods5/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods5/keng.jar', 36553],
+            ['.minecraft/mods6/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods7/vue-2.6.12.js', 37246],
+            ['.minecraft/mods12/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods12/vue-2.6.12.js', 37246],
+            ['.minecraft/mods31/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods133/keng.jar', 36553],
+            ['.minecraft/mods13/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods13/vue-2.6.12.js', 37246],
+            ['.minecraft/mods14/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods14/keng.jar', 36553],
+            ['.minecraft/mods14/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods14/vue-2.6.12.js', 37246],
+            ['.minecraft/mods15/ZeroCore2-1.16.4-2.0.+7.jar', 649672],
+            ['.minecraft/mods15/keng.jar', 36553],
+            ['.minecraft/mods16/updater-php - 快捷方式.jar', 543546],
+            ['.minecraft/mods17/vue-2.6.12.js', 37246],
         ]
 
         callback.updating_old_files(old_files)
@@ -74,16 +107,22 @@ async function test_(isupgrade) {
         for (const file of new_files) {
             let filename = file[0]
             let filelen = file[1]
-            for(let i=0;i<11;i++) {
-                let recv = i==0?0:parseInt(1/10*filelen)
-                callback.updating_downloading(filename, recv, parseInt(i/10*filelen), filelen)
-                await sleep2(30)
+            let count = 20
+            for(let i=0;i<count+1;i++) {
+                let recv = i==0?0:parseInt(1/count*filelen)
+                callback.updating_downloading(filename, recv, parseInt(i/count*filelen), filelen)
+                // await sleep2(Range(50, 500))
+                await sleep2(Range(50, 90))
             }
         }
 
         await sleep2(100)
         callback.cleanup()
     }
+}
+
+function Range(min, max) { 
+    return Math.floor(Math.random()*(max-min+1)+min) 
 }
 
 function test(isupgrade) {

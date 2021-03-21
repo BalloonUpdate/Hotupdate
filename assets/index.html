@@ -8,8 +8,15 @@
 
 	<script src="libs/jquery-3.5.1.min.js"></script>
 	<script src="libs/vue-2.6.12.js"></script>
-	
+
 	<style>
+		html {
+			height: 100%;
+		}
+		body {
+			height: 100%;
+			margin: 0;
+		}
 		#bg {
 			position: fixed;
 			top: 0;
@@ -20,19 +27,54 @@
 			background-color: white;
 		}
 		#vue-container {
-			max-width: 500px;
-			margin: auto;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
 		}
-		.progress {
-			width: 60px;
+		.list {
+			height: 100%;
+			flex-grow: 1;
+			overflow: auto;
 		}
 		.item {
 			white-space: nowrap;
-			margin-bottom: 3px;
+			/* margin: 10px 0px; */
+		}
+		.item-progress {
+			border-radius: 8px;
+			background-color: #b4f1bf;
+			position: absolute; 
+			top: 0; 
+			left: 0; 
+			bottom: 0; 
+			right: 0; 
+			z-index: -1;
 		}
 		.item * {
 			display: inline-block;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		}
+		.progress {
+			width: 60px;
+		}
+		.progress-bar {
+			position: relative;
+		}
+		.progress-bar-fill {
+			border-radius: 13px;
+			height: 30px; 
+			background-color: #d0d0d0;
+			position: absolute; 
+			top: 0; 
+			left: 0; 
+			bottom: 0; 
+			right: 0; 
+			z-index: -1;
+		}
+		.message {
+			text-align: center;
+			height: 100%;
+			line-height: 30px;
 		}
 	</style>
 </head>
@@ -42,19 +84,33 @@
 
 	<div id="vue-container">
 		<div class="list">
-			<div class="item" 
+			<div class="item"
 				v-for="i in items"
 				v-bind:style="i.bold?'font-weight: bold;':''"
+				v-bind:data="i.path"
 			>
-				<div class="progress">{{i.progress}}</div>
-				<div class="path">{{i.path}}</div>
+				<div style="position: relative; width: 100%;">
+					<div class="item-progress"
+						v-bind:style="'width: '+getItemProgress(i.progress)/10.0+'%'"
+					></div>
+					<div class="progress">{{getItemProgressText(i.progress)}}</div>
+					<div class="path">{{i.path}}</div>
+				</div>
 			</div>
+		</div>
+
+		<div class="progress-bar">
+			<div class="progress-bar-fill"
+				v-bind:style="'width: '+progress/10.0+'%'"
+			></div>
+			<div class="message">{{progressText}}</div>
 		</div>
 	</div>
 
 	<script src="updater.js"></script>
 	<script src="test.js"></script>
 	<script src="index.js"></script>
+	<script>test(false)</script>
 </body>
 
 </html>
