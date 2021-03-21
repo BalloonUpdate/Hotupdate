@@ -8,15 +8,20 @@
 
 	<script src="libs/jquery-3.5.1.min.js"></script>
 	<script src="libs/vue-2.6.12.js"></script>
-	<script src="updater.js"></script>
+	
 	<style>
-		body {
-			/* background-color: rgb(116, 121, 55); */
+		#bg {
+			position: fixed;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: -1;
+			background-color: white;
 		}
 		#vue-container {
 			max-width: 500px;
 			margin: auto;
-			/* background-color: #bbeaa8; */
 		}
 		.progress {
 			width: 60px;
@@ -33,9 +38,9 @@
 </head>
 
 <body>
-	<div id="vue-container">
-		<div class="message" v-html="message"></div>
+	<div id="bg"></div>
 
+	<div id="vue-container">
 		<div class="list">
 			<div class="item" 
 				v-for="i in items"
@@ -47,6 +52,7 @@
 		</div>
 	</div>
 
+	<script src="updater.js"></script>
 	<script src="test.js"></script>
 	<script src="index.js"></script>
 </body>

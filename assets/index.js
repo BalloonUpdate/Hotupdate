@@ -1,7 +1,6 @@
 var vue = new Vue({
     el: '#vue-container',
     data: {
-        message: '',
         items: [
             // {
             //     path: 'dddddd/aaaa.txt',
@@ -13,12 +12,6 @@ var vue = new Vue({
     methods: {
         topBottom: function() {
             $(document).scrollTop($(document).height());
-        },
-        output: function(text) {
-            this.message += text+'<br/>'
-        },
-        clearOutput: function() {
-            this.message = ''
         },
         findItem: function(path) {
             let index = 0
@@ -47,18 +40,26 @@ var vue = new Vue({
     }
 })
 
-
-
-function output(text) {
-    vue.output(text)
+var ex_translations = {
+    NotInRightPathError: '找不到../../.minecraft目录',
+    NoSettingsFileError: '找不到配置文件',
+    FailedToConnectError: '无法连接至服务器',
+    UnableToDecodeError: '服务器返回了无法解码的数据',
+    UnexpectedTransmissionError: '传输中断',
+    UnexpectedHttpCodeError: '不正确的HTTP状态码',
+    
+    're.error': '正则表达式错误'
 }
 
+var config = null
 var totalBytes = 0
 var receivedBytes = 0
 
 var callback = {
-    init: () => {
+    init: (_config) => {
         updaterApi.setTitle('正在连接服务器')
+        config = _config
+        console.warn(_config)
     },
     check_for_upgrade: (url) => {
     },
@@ -156,11 +157,17 @@ var callback = {
     alert: (text) => {
         alert(text)
     },
-    on_error: (type, detail, trackback) => {
+    on_error: (type, detail, isPyException, trackback) => {
+        if(type in ex_translations)
+            type += '('+ex_translations[type]+')'
+
         alert('出现异常: '+type+'\n\n'+detail)
-        if(type=='PythonException' && confirm('是否显示异常调用栈?'))
+
+        if(isPyException && confirm('是否显示异常调用栈?'))
             alert(trackback)
-        else if(confirm('是否需要打开服务器官网下载完整客户端?'))
-            updaterApi.execute('start https://baidu.com')
+
+        if(config.error_message && confirm(config.error_message))
+            if(config.error_help)
+                updaterApi.execute(config.error_help)
     }
 }

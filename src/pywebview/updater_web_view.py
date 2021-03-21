@@ -5,6 +5,7 @@ import sys
 import time
 import traceback
 import webview
+from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR
 
 from webview import Window
 
@@ -13,7 +14,13 @@ from src.utils.logger import info, logger
 from webview.platforms.cef import settings
 
 settings.update({
-    'persist_session_cookies': True
+    'persist_session_cookies': True,
+    'context_menu': {
+        'view_source': True,
+        'devtools': True
+    },
+    'debug': True,
+    'log_severity': LOGSEVERITY_ERROR if inDevelopment else LOGSEVERITY_INFO,
 })
 
 
@@ -30,8 +37,6 @@ class UpdaterWebView:
         self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height, text_select=True)
         self.onStart = onStart
 
-        self.expose()
-
         class Monitor(logging.StreamHandler):
             def emit(self, record: logging.LogRecord) -> None:
                 info('WebView: ' + record.message)
@@ -40,15 +45,12 @@ class UpdaterWebView:
 
         logging.getLogger('pywebview').addHandler(Monitor())
 
-    def expose(self):
-        self.window.expose(self.setTitle)
-
     def onInit(self, window):
         if self.onStart is not None:
             self.onStart(window)
 
     def start(self):
-        webview.start(func=self.onInit, args=self.window, gui='cef', http_server=True)
+        webview.start(func=self.onInit, args=self.window, gui='cef', http_server=True, debug=True)
         # webview.start(func=self.onInit, args=self.window, http_server=True)
 
     def setTitle(self, title):
@@ -95,9 +97,13 @@ class UpdaterWebView:
             else:
                 return str(arg)
 
-        statement = rf'callback.{name}{str(convert(args))}'
-        statement = statement.replace('True', 'true')
-        statement = statement.replace('False', 'false')
+        argtext = ''
+        for aa in args:
+            argtext += json.dumps(aa) + ','
+        if argtext.endswith(','):
+            argtext = argtext[:-1]
+
+        statement = rf'callback.{name}({argtext})'
         logger.debug('Statement: ' + statement)
         try:
             self.window.evaluate_js(statement)

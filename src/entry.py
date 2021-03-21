@@ -45,7 +45,7 @@ class Entry:
 
     def work(self):
         try:
-            self.webview.invokeCallback('init')
+            self.webview.invokeCallback('init', self.getSettingsJson())
 
             # 读取配置文件
             settingsJson = self.getSettingsJson()
@@ -102,11 +102,13 @@ class Entry:
 
         except BasicDisplayableError as e:
             logger.error('Displayable Exception: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', 'DisplayableException', e.title + ': ' + e.content, traceback.format_exc())
+            self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False, traceback.format_exc())
             self.exitcode = 1
         except BaseException as e:
             logger.error('Unknown error occurred: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', 'PythonException', '----------Python exception raised----------\n'+str(type(e))+'\n'+str(e), traceback.format_exc())
+            className = str(e.__class__)
+            className = className[className.find('\'')+1:className.rfind('\'')]
+            self.webview.invokeCallback('on_error', className, '----------Python exception raised----------\n'+str(type(e))+'\n'+str(e), True, traceback.format_exc())
             self.exitcode = 1
         finally:
             self.webview.close()
@@ -143,7 +145,6 @@ class Entry:
         if self.exitcode == 1:
             errorSignal.create()
 
-        self.webview.close()
         sys.exit(self.exitcode)
 
     def initializeWorkDirectory(self):
