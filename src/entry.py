@@ -92,7 +92,7 @@ class Entry:
                 self.webview.invokeCallback('upgrading_old_files', oldFiles)
                 self.webview.invokeCallback('upgrading_new_files', newFiles)
 
-                hotupdate.main(comparer, )
+                hotupdate.main(comparer)
             else:
                 self.webview.invokeCallback('whether_upgrade', False)
                 info('there are nothing need updating')

@@ -147,7 +147,6 @@ class HotUpdateHelper:
             except requests.exceptions.ChunkedEncodingError as e:
                 raise UnexpectedTransmissionError(e, url)
 
-
         # 将脚本代码写入文件
         with open(self.temporalScript.path, "w+", encoding='gbk') as f:
             f.write(batchText)

@@ -2,6 +2,8 @@ import random
 import subprocess
 import sys
 import time
+from multiprocessing.pool import ThreadPool
+from queue import Queue
 
 import requests
 
@@ -49,43 +51,73 @@ class NewUpdater:
         newFiles = [[filename, length] for filename, length in work.downloadList.items()]
         oldFiles = [file for file in work.deleteList]
 
-        webview.invokeCallback('updating_old_files', oldFiles)
+        # webview.invokeCallback('updating_old_files', oldFiles)
         webview.invokeCallback('updating_new_files', newFiles)
 
         # 删除旧文件
         webview.invokeCallback('updating_before_removing')
 
         for path in work.deleteList:
-            info('Deleted: '+path)
-            webview.invokeCallback('updating_removing', path)
+            info('Deleted: ' + path)
+            # webview.invokeCallback('updating_removing', path)
             rootDir(path).delete()
-            time.sleep(0.02 + random.random() * 0.03)
+            # time.sleep(0.01)
 
         # 下载新文件
         webview.invokeCallback('updating_before_downloading')
 
+        maxParallel = self.e.getSettingsJson()['parallel'] if 'parallel' in self.e.getSettingsJson() else 1
+        chunkSize = self.e.getSettingsJson()['chunk_size'] if 'chunk_size' in self.e.getSettingsJson() else 32
+        autoChunkSize = 'chunk_size' not in self.e.getSettingsJson()
+
+        downloadQueue = Queue(1000000)
+        threadPool = ThreadPool(maxParallel)
+
+        print('Count of downloadTask: ' + str(len(work.downloadList.items())))
+
         # 开始下载
         for path, length in work.downloadList.items():
-            file = rootDir(path)
-            url = self.e.updateSource + '/' + path
+            _file = rootDir(path)
+            _url = self.e.updateSource + '/' + path
+            downloadQueue.put([_file, _url, path, length])
 
-            info('Downloading: ' + path + ' on ' + url)
-            webview.invokeCallback('updating_downloading', path, 0, 0, length)
+        def downloadTask():
+            while not downloadQueue.empty():
+                task = downloadQueue.get(timeout=10)
+                file = task[0]
+                url = task[1]
+                path = task[2]
+                length = task[3]
 
-            r = requests.get(url, stream=True, timeout=5)
-            if r.status_code != 200:
-                raise UnexpectedHttpCodeError(url, r.status_code, r.text)
+                info('Downloading: ' + path + ' from ' + url)
+                webview.invokeCallback('updating_downloading', path, 0, 0, length)
 
-            chunkSize = 1024 * 64
-            received = 0
+                r = requests.get(url, stream=True, timeout=5)
+                if r.status_code != 200:
+                    raise UnexpectedHttpCodeError(url, r.status_code, r.text)
 
-            file.makeParentDirs()
-            file.delete()
-            with open(file.path, 'wb+') as f:
-                for chunk in r.iter_content(chunk_size=chunkSize):
-                    f.write(chunk)
-                    received += len(chunk)
-                    webview.invokeCallback('updating_downloading', path, len(chunk), received, length)
+                if autoChunkSize:
+                    cs = int(length / 1024 / 1)
+                    _cs = max(4, min(1024, cs))
+                    _chunkSize = 1024 * _cs
+                    info('AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
+                else:
+                    _chunkSize = 1024 * chunkSize
+                received = 0
+
+                file.makeParentDirs()
+                file.delete()
+                with open(file.path, 'wb+') as f:
+                    for chunk in r.iter_content(chunk_size=_chunkSize):
+                        f.write(chunk)
+                        received += len(chunk)
+                        webview.invokeCallback('updating_downloading', path, len(chunk), received, length)
+
+        for i in range(0, maxParallel):
+            threadPool.apply_async(downloadTask)
+
+        threadPool.close()
+        threadPool.join()
 
         # 如果被打包就执行一下命令
         if getattr(sys, 'frozen', False) and command != '':
@@ -110,5 +142,3 @@ class NewUpdater:
         workMode.scan(rootDir, structure)
 
         return workMode
-
-

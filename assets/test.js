@@ -47,6 +47,8 @@ async function test_(isupgrade) {
         callback.calculate_differences_for_update()
         await sleep2(100)
 
+        await sleep2(2000)
+
         let old_files = [
             '.minecraft/mods/XNetGases-1.16.4-2.1.0 - 副本.jar',
             '.minecraft/mods/keng34343434.jar',

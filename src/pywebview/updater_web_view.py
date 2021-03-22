@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 import sys
+import threading
 import time
 import traceback
 import webview
@@ -27,6 +28,8 @@ settings.update({
 class UpdaterWebView:
     def __init__(self, entry, onStart=None, width=800, height=600):
         self.entry = entry
+
+        self.lock = threading.Lock()
 
         externalAssets = entry.exe.parent('assets/index.html')
         usingInternalAssets = inDevelopment or not externalAssets.exists
@@ -85,31 +88,25 @@ class UpdaterWebView:
     def dialog(self, title, content):
         self.alert(title + ': ' + content)
 
-    def invokeCallback(self, name, *args):
-
-        def convert(arg):
-            # if isinstance(arg, list):
-            #     text = ''
-            # if isinstance(arg, tuple):
-            #     pass
-            if isinstance(arg, bool):
-                return 'true' if arg else 'false'
-            else:
-                return str(arg)
-
-        argtext = ''
-        for aa in args:
-            argtext += json.dumps(aa) + ','
-        if argtext.endswith(','):
-            argtext = argtext[:-1]
-
-        statement = rf'callback.{name}({argtext})'
-        logger.debug('Statement: ' + statement)
+    def evaluateJs(self, statement):
         try:
-            self.window.evaluate_js(statement)
-        except:
+            with self.lock:
+                self.window.evaluate_js(statement)
+        except BaseException:
             logger.error('+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
             logger.error(traceback.format_exc())
+
+    def invokeCallback(self, name, *args):
+        argText = ''
+        for aa in args:
+            argText += json.dumps(aa) + ','
+        if argText.endswith(','):
+            argText = argText[:-1]
+
+        statement = rf'callback.{name}({argText})'
+        with self.lock:
+            logger.debug('Statement: ' + statement)
+        self.evaluateJs(statement)
 
     # def setSize(self, width, height):
     #     self.window.resize(width, height)

@@ -39,9 +39,9 @@ var vue = new Vue({
             console.log('focus on: '+path)
 
             let list = $('.list')
-            let scroll = list.scrollTop() + el.position().top - ((document.body.clientHeight-30)*0.2)
+            let scroll = list.scrollTop() + el.position().top - ((document.body.clientHeight-30)*0.85)
             list.stop(true)
-            list.animate({scrollTop: scroll}, 1000)
+            list.animate({scrollTop: scroll}, 10)
         },
         getItemProgressText: function(progress) {
             if(progress<0)
@@ -75,13 +75,19 @@ var ex_translations = {
 var config = null
 var totalBytes = 0
 var receivedBytes = 0
+var totalFileCount = 0
+var downloadFileCount = 0
 
 var callback = {
     init: (_config) => {
         updaterApi.setTitle('正在连接服务器')
         vue.progressText = '正在连接服务器'
         config = _config
-        console.warn(_config)
+        
+        $('#bg').css('background-image', 'url(\'loading.gif\')')
+
+        if(inDev)
+        alert('indev')
     },
     check_for_upgrade: (url) => {
     },
@@ -120,12 +126,14 @@ var callback = {
     upgrading_before_downloading: () => {
     },
     upgrading_downloading: (file, recv, bytes, total) => {
-        vue.setBold(file, true)
         receivedBytes += recv
 
-        vue.setProgress(file, parseInt(bytes/total*100))
+        vue.setProgress(file, parseInt(bytes/total*1000))
         updaterApi.setTitle('正在升级 '+parseInt(receivedBytes/totalBytes*100)+'%')
         vue.progressText = '正在升级 '+parseInt(receivedBytes/totalBytes*100)+'%'
+
+        if(bytes==total)
+            vue.setBold(file, true)
     },
     upgrading_before_installing: () => {
         updaterApi.setTitle('开始安装更新')
@@ -148,6 +156,10 @@ var callback = {
         }
     },
     updating_new_files: (paths) => {
+        $('#bg').css('background-image', '')
+
+        totalFileCount = paths.length
+
         for(let p of paths) {
             let path = p[0]
             let len = p[1]
@@ -171,7 +183,6 @@ var callback = {
         updaterApi.setTitle('下载新文件')
     },
     updating_downloading: (file, recv, bytes, total) => {
-        vue.setBold(file, true)
         receivedBytes += recv
 
         // 更新全局信息
@@ -181,11 +192,17 @@ var callback = {
         vue.progress = totalprogress
         updaterApi.setTitle('正在更新文件 '+(totalprogress/10)+'%')
         filename = file.split('/').reverse()
-        vue.progressText = filename[0]+'  -  '+parseInt(bytes/total*100)+'%'
+        vue.progressText = (totalprogress/10)+'%   -   '+downloadFileCount+'/'+vue.items.length
 
         // 在开始下载时聚焦
         if(bytes==0)
             vue.focusOn(file)
+        
+        if(bytes==total)
+        {
+            vue.setBold(file, true)
+            downloadFileCount += 1
+        }
     },
 
     cleanup: () => {
