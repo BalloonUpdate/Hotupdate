@@ -22,7 +22,6 @@ async function test_(isupgrade) {
             ['UpdaterHotupdatePackage.exe', 71218479, '8b321031c8b47f2bb6a273171d51b71b039b2579']
         ]
     
-        callback.upgrading_old_files(old_files)
         callback.upgrading_new_files(new_files)
         await sleep2(100)
     
@@ -95,14 +94,7 @@ async function test_(isupgrade) {
             ['.minecraft/mods17/vue-2.6.12.js', 37246],
         ]
 
-        callback.updating_old_files(old_files)
         callback.updating_new_files(new_files)
-        await sleep2(100)
-        callback.updating_before_removing()
-
-        for(let file of old_files)
-            callback.updating_removing(file)
-
         await sleep2(100)
         callback.updating_before_downloading()
 
@@ -127,6 +119,10 @@ function Range(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min) 
 }
 
-function test(isupgrade) {
-    test_(isupgrade)
+function testA() {
+    test_(true)
+}
+
+function testB() {
+    test_(false)
 }

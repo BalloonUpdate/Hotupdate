@@ -43,11 +43,6 @@ var vue = new Vue({
             list.stop(true)
             list.animate({scrollTop: scroll}, 10)
         },
-        getItemProgressText: function(progress) {
-            if(progress<0)
-                return progress==-1? '等待删除':'已删除'
-            return progress/10.0+'%'
-        },
         getItemProgress: function(progress) {
             if(progress<=0)
                 return 0
@@ -85,9 +80,6 @@ var callback = {
         config = _config
         
         $('#bg').css('background-image', 'url(\'loading.gif\')')
-
-        if(inDev)
-        alert('indev')
     },
     check_for_upgrade: (url) => {
     },
@@ -105,10 +97,9 @@ var callback = {
             vue.progressText = '正在更新文件'
         }
     },
-    
-    upgrading_old_files: (paths) => {
-    },
     upgrading_new_files: (paths) => {
+        $('#bg').css('background-image', '')
+
         for(let p of paths) {
             let path = p[0]
             let len = p[1]
@@ -146,15 +137,6 @@ var callback = {
         updaterApi.setTitle('校验文件..')
         vue.progressText = '校验文件..'
     },
-    updating_old_files: (paths) => {
-        for(let p of paths) {
-            vue.items.push({
-                path: p,
-                progress: -1,
-                bold: false
-            })
-        }
-    },
     updating_new_files: (paths) => {
         $('#bg').css('background-image', '')
 
@@ -173,12 +155,6 @@ var callback = {
             })
         }
     },
-    updating_before_removing: () => {
-    },
-    updating_removing: (file) => {
-        vue.setBold(file, true)
-        vue.setProgress(file, -2)
-    },
     updating_before_downloading: () => {
         updaterApi.setTitle('下载新文件')
     },
@@ -192,12 +168,13 @@ var callback = {
         vue.progress = totalprogress
         updaterApi.setTitle('正在更新文件 '+(totalprogress/10)+'%')
         filename = file.split('/').reverse()
-        vue.progressText = (totalprogress/10)+'%   -   '+downloadFileCount+'/'+vue.items.length
+        vue.progressText = (totalprogress/10)+'%    -    '+downloadFileCount+'/'+vue.items.length+'    -    '+flowSpeedSample(recv)+'/s'
 
-        // 在开始下载时聚焦
+        // 下载开始时
         if(bytes==0)
             vue.focusOn(file)
         
+        // 下载完成时
         if(bytes==total)
         {
             vue.setBold(file, true)

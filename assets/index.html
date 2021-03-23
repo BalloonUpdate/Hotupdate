@@ -79,6 +79,10 @@
 			height: 100%;
 			line-height: 30px;
 		}
+		.message pre {
+			margin: 0;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		}
 	</style>
 </head>
 
@@ -89,6 +93,8 @@
 		<div class="list">
 			<div class="item"
 				v-for="i in items"
+				v-bind:key="i.path"
+				v-if="i.progress<1000"
 				v-bind:style="i.bold?'font-weight: bold;':''"
 				v-bind:data="i.path"
 			>
@@ -96,7 +102,7 @@
 					<div class="item-progress"
 						v-bind:style="'width: '+getItemProgress(i.progress)/10.0+'%'"
 					></div>
-					<div class="progress">{{getItemProgressText(i.progress)}}</div>
+					<div class="progress">{{i.progress/10.0+'%'}}</div>
 					<div class="path">{{i.path}}</div>
 				</div>
 			</div>
@@ -106,12 +112,13 @@
 			<div class="progress-bar-fill"
 				v-bind:style="'width: '+progress/10.0+'%'"
 			></div>
-			<div class="message">{{progressText}}</div>
+			<div class="message"><pre>{{progressText}}</pre></div>
 		</div>
 	</div>
 
 	<script src="updater.js"></script>
 	<script src="test.js"></script>
+	<script src="utils.js"></script>
 	<script src="index.js"></script>
 	<script>
 		// test(false)
