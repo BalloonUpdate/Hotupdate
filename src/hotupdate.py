@@ -114,10 +114,6 @@ class HotUpdateHelper:
 
         webview.invokeCallback('upgrading_before_downloading')
 
-        # 创建缺失的目录
-        for mf in comparer.downloadFolders:
-            self.workDir(mf).mkdirs()
-
         # 下载新文件
         for path, length in comparer.downloadFiles.items():
             url = self.e.upgradeSource + '/' + path
