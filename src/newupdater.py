@@ -120,7 +120,7 @@ class NewUpdater:
         threadPool.join()
 
         # 如果被打包就执行一下命令
-        if getattr(sys, 'frozen', False) and command != '':
+        if inDevelopment and command != '':
             subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
 
         webview.invokeCallback('cleanup')
