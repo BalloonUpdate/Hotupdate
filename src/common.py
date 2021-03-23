@@ -1,3 +1,3 @@
 import sys
 
-inDevelopment = not getattr(sys, 'frozen', False)
+inDev = not getattr(sys, 'frozen', False)

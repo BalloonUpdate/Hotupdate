@@ -9,9 +9,9 @@ if __name__ == "__main__":
     import clr
     if clr.FindAssembly('System.Collections') is None:
         print('AddReference!!')
-        from src.common import inDevelopment
+        from src.common import inDev
         import sys
-        if not inDevelopment:
+        if not inDev:
             temp = File(getattr(sys, '_MEIPASS', ''))
             sys.path.append(temp('dotnet').windowsPath)
 

@@ -7,7 +7,7 @@ from queue import Queue
 
 import requests
 
-from src.common import inDevelopment
+from src.common import inDev
 from src.exception.displayable_error import UnexpectedHttpCodeError
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.logger import info
@@ -24,11 +24,13 @@ class NewUpdater:
         webview: UpdaterWebView = self.e.webview
 
         re = response1['server']
+        ver = re['version']
         mode = re['mode_a']
         regexes = re['regexes']
         regexesMode = re['match_all_regexes']
         command = re['command_before_exit']
 
+        info(F'ServerVersion: {ver}')
         info(f'ModeA: {mode}')
         info(f'Regexes: {regexes}')
         info(f'RegexesMode: {regexesMode}')
@@ -38,11 +40,11 @@ class NewUpdater:
         webview.invokeCallback('check_for_update', self.e.updateApi)
         remoteFilesStructure = self.e.httpGetRequest(self.e.updateApi)
 
-        rootDir = workDir if not inDevelopment else workDir('download')
+        rootDir = workDir if not inDev else workDir('download')
         rootDir.mkdirs()
 
-        if inDevelopment:
-            info('InDevelopmentMode: ' + rootDir.path)
+        if inDev:
+            info('In Dev Mode: ' + rootDir.path)
 
         # 计算文件差异
         webview.invokeCallback('calculate_differences_for_update')
@@ -120,7 +122,7 @@ class NewUpdater:
         threadPool.join()
 
         # 如果被打包就执行一下命令
-        if inDevelopment and command != '':
+        if inDev and command != '':
             subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
 
         webview.invokeCallback('cleanup')

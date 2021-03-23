@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from src.common import inDevelopment
+from src.common import inDev
 from src.utils.file import File
 
 
@@ -29,7 +29,7 @@ class DebugLogger(logging.Logger):
         return logging.Formatter(fmt=lineFormat, datefmt=dateFormat)
 
 
-logFile = File(sys.executable).parent.parent('logs/updater.log') if not inDevelopment else File('debug-workdir/logs/updater.log')
+logFile = File(sys.executable).parent.parent('logs/updater.log') if not inDev else File('debug-workdir/logs/updater.log')
 logFile.makeParentDirs()
 logFile.clear()
 logger = DebugLogger(logFile)

@@ -10,7 +10,7 @@ from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR
 
 from webview import Window
 
-from src.common import inDevelopment
+from src.common import inDev
 from src.utils.logger import info, logger
 from webview.platforms.cef import settings
 
@@ -21,7 +21,7 @@ settings.update({
         'devtools': True
     },
     'debug': True,
-    'log_severity': LOGSEVERITY_ERROR if inDevelopment else LOGSEVERITY_INFO,
+    'log_severity': LOGSEVERITY_ERROR if inDev else LOGSEVERITY_INFO,
 })
 
 
@@ -32,7 +32,7 @@ class UpdaterWebView:
         self.lock = threading.Lock()
 
         externalAssets = entry.exe.parent('assets/index.html')
-        usingInternalAssets = inDevelopment or not externalAssets.exists
+        usingInternalAssets = inDev or not externalAssets.exists
         url = 'assets/index.html' if usingInternalAssets else externalAssets.path
         info('Using '+('internal' if usingInternalAssets else 'external')+' Assets')
         info('Load Assets: '+url)

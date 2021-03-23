@@ -10,7 +10,7 @@ from urllib.parse import unquote
 
 import requests
 
-from src.common import inDevelopment
+from src.common import inDev
 from src.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
 from src.hotupdate import HotUpdateHelper
@@ -61,8 +61,10 @@ class Entry:
             upgrade_dir = response1['upgrade_dir']
             update_info = response1['update_info']
             update_dir = response1['update_dir']
-            self.upgradeApi = (self.serverUrl + '/' + upgrade_info) if not upgrade_info.startswith('http') else upgrade_info
-            self.upgradeSource = (self.serverUrl + '/' + upgrade_dir) if not upgrade_dir.startswith('http') else upgrade_dir
+            self.upgradeApi = (self.serverUrl + '/' + upgrade_info) if not upgrade_info.startswith(
+                'http') else upgrade_info
+            self.upgradeSource = (self.serverUrl + '/' + upgrade_dir) if not upgrade_dir.startswith(
+                'http') else upgrade_dir
             self.updateApi = (self.serverUrl + '/' + update_info) if not update_info.startswith('http') else update_info
             self.updateSource = (self.serverUrl + '/' + update_dir) if not update_dir.startswith('http') else update_dir
 
@@ -77,10 +79,9 @@ class Entry:
 
             # 如果有需要删除/下载的文件，代表程序需要更新
             if len(comparer.deleteFiles) > 0 or len(comparer.deleteFolders) > 0 or len(comparer.downloadFiles) > 0:
-                info('the followings need updating: ')
-                info('uselessFiles: ' + str(comparer.deleteFiles))
-                info('uselessFolders: ' + str(comparer.deleteFolders))
-                info('missingFiles: ' + str(comparer.downloadFiles))
+                info('Old Files: ' + str(comparer.deleteFiles))
+                info('Old Folders: ' + str(comparer.deleteFolders))
+                info('New Files: ' + str(comparer.downloadFiles))
 
                 # filename, length, hash
                 newFiles = [[filename, length[0], length[1]] for filename, length in comparer.downloadFiles.items()]
@@ -95,41 +96,46 @@ class Entry:
                 hotupdate.main(comparer)
             else:
                 self.webview.invokeCallback('whether_upgrade', False)
-                info('there are nothing need updating')
+                info('There are nothing need updating')
 
                 np = NewUpdater(self)
                 np.main(response1, settingsJson)
 
         except BasicDisplayableError as e:
             logger.error('Displayable Exception: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False, traceback.format_exc())
+            self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False,
+                                        traceback.format_exc())
             self.exitcode = 1
         except BaseException as e:
             logger.error('Unknown error occurred: ' + traceback.format_exc())
             className = str(e.__class__)
-            className = className[className.find('\'')+1:className.rfind('\'')]
-            self.webview.invokeCallback('on_error', className, '----------Python exception raised----------\n'+str(type(e))+'\n'+str(e), True, traceback.format_exc())
+            className = className[className.find('\'') + 1:className.rfind('\'')]
+            self.webview.invokeCallback('on_error', className,
+                                        '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e),
+                                        True, traceback.format_exc())
             self.exitcode = 1
         finally:
             self.webview.close()
 
     def main(self):
-        width = 800
-        height = 600
+        width = 600
+        height = 480
 
         try:
+            # 尝试读取窗口宽高
             settingsJson = self.getSettingsJson()
             width = settingsJson['width']
             height = settingsJson['height']
-        except Exception:
+        except BaseException:
             pass
 
-        onStart = lambda window: threading.Thread(target=self.work, daemon=True).start()
+        def onStart(window):
+            threading.Thread(target=self.work, daemon=True).start()
 
         self.webview = UpdaterWebView(self, onStart=onStart, width=width, height=height)
         self.webview.start()
 
-        info('Webview Exited with exit code '+str(self.exitcode))
+        info('Webview Exited with exit code ' + str(self.exitcode))
 
         # ------------
 
@@ -148,7 +154,7 @@ class Entry:
         sys.exit(self.exitcode)
 
     def initializeWorkDirectory(self):
-        if not inDevelopment:
+        if not inDev:
             self.workDir = File(sys.argv[1]) if len(sys.argv) > 1 else self.exe.parent.parent.parent
             if '.minecraft' not in self.workDir:
                 raise NotInRightPathError(self.workDir.path)
