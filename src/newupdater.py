@@ -38,7 +38,7 @@ class NewUpdater:
         webview.invokeCallback('check_for_update', self.e.updateApi)
         remoteFilesStructure = self.e.httpGetRequest(self.e.updateApi)
 
-        rootDir = workDir if not inDevelopment else workDir('debug-dir')
+        rootDir = workDir if not inDevelopment else workDir('download')
         rootDir.mkdirs()
 
         if inDevelopment:

@@ -17,13 +17,13 @@ class HotUpdateHelper:
         self.workDir = workDir = entry.workDir
         self.e = entry
 
-        self.temporalDir = workDir(tempfile.mkdtemp()) if not inDevelopment else workDir('debug_temp_dir')
+        self.temporalDir = workDir(tempfile.mkdtemp()) if not inDevelopment else workDir('temp_dir')
         self.temporalDir.mkdirs()
         self.temporalDir.clear()
 
-        self.temporalScript = workDir(tempfile.mkstemp(suffix='.bat')[1]) if not inDevelopment else workDir('debug_temp_script.bat')
+        self.temporalScript = workDir(tempfile.mkstemp(suffix='.bat')[1]) if not inDevelopment else workDir('temp_script.bat')
 
-        self.hotupdate = workDir(sys.executable).parent if not inDevelopment else workDir('debug_prog_dir')
+        self.hotupdate = workDir(sys.executable).parent if not inDevelopment else workDir('program')
         self.hotupdate.mkdirs()
 
     def compare(self, remoteFileStructure: list):
