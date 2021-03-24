@@ -1,6 +1,9 @@
 {
-    "url": "http://127.0.0.1:7750",
+    "url": "http://127.0.0.1:802",
     "visible_time": 500,
-    "width": 500,
-    "height": 400
+    "width": 600,
+    "height": 480,
+    "parallel": 16,
+    "error_message": "是否需要打开服务器官网下载完整客户端?",
+    "error_help": "start https://www.baidu.com"
 }
