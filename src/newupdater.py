@@ -8,7 +8,7 @@ from queue import Queue
 import requests
 
 from src.common import inDev
-from src.exception.displayable_error import UnexpectedHttpCodeError
+from src.exception.displayable_error import UnexpectedHttpCodeError, FailedToConnectError, UnexpectedTransmissionError
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.logger import info
 from src.work_mode.mode_a import AMode
@@ -103,32 +103,47 @@ class NewUpdater:
                 info('Downloading: ' + path + ' from ' + url)
                 webview.invokeCallback('updating_downloading', path, 0, 0, length)
 
-                r = requests.get(url, stream=True, timeout=5)
-                if r.status_code != 200:
-                    raise UnexpectedHttpCodeError(url, r.status_code, r.text)
+                try:
+                    r = requests.get(url, stream=True, timeout=5)
+                    if r.status_code != 200:
+                        raise UnexpectedHttpCodeError(url, r.status_code, r.text)
 
-                if autoChunkSize:
-                    cs = int(length / 1024 / 1)
-                    _cs = max(4, min(1024, cs))
-                    _chunkSize = 1024 * _cs
-                    info('AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
-                else:
-                    _chunkSize = 1024 * chunkSize
-                received = 0
+                    if autoChunkSize:
+                        cs = int(length / 1024 / 1)
+                        _cs = max(4, min(1024, cs))
+                        _chunkSize = 1024 * _cs
+                        info('AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
+                    else:
+                        _chunkSize = 1024 * chunkSize
+                    received = 0
 
-                file.makeParentDirs()
-                file.delete()
-                with open(file.path, 'wb+') as f:
-                    for chunk in r.iter_content(chunk_size=_chunkSize):
-                        f.write(chunk)
-                        received += len(chunk)
-                        webview.invokeCallback('updating_downloading', path, len(chunk), received, length)
+                    file.makeParentDirs()
+                    file.delete()
+                    with open(file.path, 'wb+') as f:
+                        for chunk in r.iter_content(chunk_size=_chunkSize):
+                            f.write(chunk)
+                            received += len(chunk)
+                            webview.invokeCallback('updating_downloading', path, len(chunk), received, length)
+
+                except requests.exceptions.ConnectionError as e:
+                    raise FailedToConnectError(e, url)
+                except requests.exceptions.ChunkedEncodingError as e:
+                    raise UnexpectedTransmissionError(e, url)
+
+        ex = None
 
         for i in range(0, maxParallel):
-            threadPool.apply_async(downloadTask)
+            def onError(e):
+                threadPool.terminate()
+                nonlocal ex
+                ex = e
+            threadPool.apply_async(downloadTask, error_callback=onError)
 
         threadPool.close()
         threadPool.join()
+
+        if ex is not None:
+            raise ex
 
     @staticmethod
     def calculateChanges(mode, rootDir, regexes, regexesMode, structure):
