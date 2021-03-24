@@ -68,6 +68,9 @@ class Entry:
             self.updateApi = (self.serverUrl + '/' + update_info) if not update_info.startswith('http') else update_info
             self.updateSource = (self.serverUrl + '/' + update_dir) if not update_dir.startswith('http') else update_dir
 
+            ver = response1['version']
+            info(F'ServerVersion: {ver}')
+
             # 检查最新版本
             response2 = self.httpGetRequest(self.upgradeApi)
             remoteFilesStructure = response2
@@ -86,11 +89,7 @@ class Entry:
                 # filename, length, hash
                 newFiles = [[filename, length[0], length[1]] for filename, length in comparer.downloadFiles.items()]
                 newFiles += [[file, -1] for file in comparer.downloadFolders]
-                oldFiles = [[file, True] for file in comparer.deleteFiles]
-                oldFiles += [[file, False] for file in comparer.deleteFolders]
-
                 self.webview.invokeCallback('whether_upgrade', True)
-                self.webview.invokeCallback('upgrading_old_files', oldFiles)
                 self.webview.invokeCallback('upgrading_new_files', newFiles)
 
                 hotupdate.main(comparer)

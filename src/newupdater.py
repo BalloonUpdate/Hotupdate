@@ -24,13 +24,11 @@ class NewUpdater:
         webview: UpdaterWebView = self.e.webview
 
         re = response1['server']
-        ver = re['version']
         mode = re['mode_a']
         regexes = re['regexes']
         regexesMode = re['match_all_regexes']
         command = re['command_before_exit']
 
-        info(F'ServerVersion: {ver}')
         info(f'ModeA: {mode}')
         info(f'Regexes: {regexes}')
         info(f'RegexesMode: {regexesMode}')
@@ -48,26 +46,37 @@ class NewUpdater:
 
         # 计算文件差异
         webview.invokeCallback('calculate_differences_for_update')
-        work = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
+        workMode = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
 
-        newFiles = [[filename, length] for filename, length in work.downloadList.items()]
-        oldFiles = [file for file in work.deleteList]
-
-        # webview.invokeCallback('updating_old_files', oldFiles)
+        # 显示需要下载的新文件
+        newFiles = [[filename, length] for filename, length in workMode.downloadList.items()]
         webview.invokeCallback('updating_new_files', newFiles)
 
         # 删除旧文件
-        webview.invokeCallback('updating_before_removing')
-
-        for path in work.deleteList:
+        for path in workMode.deleteList:
             info('Deleted: ' + path)
-            # webview.invokeCallback('updating_removing', path)
             rootDir(path).delete()
-            # time.sleep(0.01)
 
-        # 下载新文件
+        # 开始下载过程
+        self.download(rootDir, workMode)
+
+        # 如果被打包就执行一下退出前命令
+        if inDev and command != '':
+            subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
+
+        webview.invokeCallback('cleanup')
+
+        if settingsJson['visible_time'] >= 0:
+            time.sleep(settingsJson['visible_time'] / 1000)
+
+        info('Webview Cleanup')
+
+    def download(self, rootDir, workMode):
+        webview: UpdaterWebView = self.e.webview
+
         webview.invokeCallback('updating_before_downloading')
 
+        # 读取下载并发数和传输大小
         maxParallel = self.e.getSettingsJson()['parallel'] if 'parallel' in self.e.getSettingsJson() else 1
         chunkSize = self.e.getSettingsJson()['chunk_size'] if 'chunk_size' in self.e.getSettingsJson() else 32
         autoChunkSize = 'chunk_size' not in self.e.getSettingsJson()
@@ -75,10 +84,10 @@ class NewUpdater:
         downloadQueue = Queue(1000000)
         threadPool = ThreadPool(maxParallel)
 
-        print('Count of downloadTask: ' + str(len(work.downloadList.items())))
+        print('Count of downloadTask: ' + str(len(workMode.downloadList.items())))
 
         # 开始下载
-        for path, length in work.downloadList.items():
+        for path, length in workMode.downloadList.items():
             _file = rootDir(path)
             _url = self.e.updateSource + '/' + path
             downloadQueue.put([_file, _url, path, length])
@@ -120,17 +129,6 @@ class NewUpdater:
 
         threadPool.close()
         threadPool.join()
-
-        # 如果被打包就执行一下命令
-        if inDev and command != '':
-            subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
-
-        webview.invokeCallback('cleanup')
-
-        if settingsJson['visible_time'] >= 0:
-            time.sleep(settingsJson['visible_time'] / 1000)
-
-        info('Webview Cleanup')
 
     @staticmethod
     def calculateChanges(mode, rootDir, regexes, regexesMode, structure):

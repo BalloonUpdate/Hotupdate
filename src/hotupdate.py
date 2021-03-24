@@ -147,7 +147,7 @@ class HotUpdateHelper:
         time.sleep(1)
 
         # 开始升级
-        cmd = 'cd /D "{self.tempScript.parent.windowsPath}" && start {self.tempScript.name}'
+        cmd = f'cd /D "{self.tempScript.parent.windowsPath}" && start {self.tempScript.name}'
         subprocess.call(cmd, shell=True)
 
         # 返回2
