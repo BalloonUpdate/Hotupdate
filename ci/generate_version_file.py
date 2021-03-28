@@ -45,7 +45,7 @@ VSVersionInfo(
             StringStruct(u'OriginalFilename', u''),
             StringStruct(u'ProductName', u'{productName}'),
             StringStruct(u'ProductVersion', u'{productVersion}'),
-            StringStruct(u'Assembly Version', u'1.0.0.0')
+            StringStruct(u'Assembly Version', u'{productVersion}')
           ]
         )
       ]),
