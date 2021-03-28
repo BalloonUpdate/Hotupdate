@@ -38,7 +38,7 @@ VSVersionInfo(
             StringStruct(u'Comments', u''),
             StringStruct(u'CompanyName', u''),
             StringStruct(u'FileDescription', u''),
-            StringStruct(u'FileVersion', u'1.0.0.0'),
+            StringStruct(u'FileVersion', u'{productVersion}'),
             StringStruct(u'InternalName', u''),
             StringStruct(u'LegalCopyright', u''),
             StringStruct(u'LegalTrademarks', u''),

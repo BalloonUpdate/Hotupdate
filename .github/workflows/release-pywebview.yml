@@ -18,8 +18,21 @@ jobs:
         with: 
           path: ~\AppData\Local\pip\Cache
           key: ${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Check Out TagName
+        id: checkout-tagname
+        shell: "python3 {0}"
+        run: |
+          import os
+          import re
+          ref = os.getenv('GITHUB_REF', '')
+          match = re.search(r'refs\/tags\/(.*)', ref)
+          tag_name = match[1] if match is not None else ''
+          print('::set-output name=tag_name::'+tag_name)
         
       - name: Build
+        env: 
+          tag_name: ${{ steps.checkout-tagname.outputs.tag_name }}
         run: |
           python -m pip install wheel setuptools
           python -m pip install -r requirements.txt
@@ -30,6 +43,8 @@ jobs:
           dir
 
       - name: Print Hashes
+        env: 
+          tag_name: ${{ steps.checkout-tagname.outputs.tag_name }}
         run: |
           python ci\version.py both
           echo "---------------------------"

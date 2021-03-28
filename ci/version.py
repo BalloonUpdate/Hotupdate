@@ -1,7 +1,11 @@
 import sys
+import os
 
 productName = 'UpdaterHotupdatePackage'
 productVersion = '2.6.4'
+
+if 'tag_name' in os.environ:
+    productVersion = os.environ['tag_name']
 
 
 if __name__ == "__main__":
