@@ -19,16 +19,6 @@ echo %filename% > dist\%version_text%
 
 echo ----------------Clean up----------------
 
-rmdir /S /Q                         D:\nginx-1.19.1\updater-php\hotupdate\
-del /f /s /q                        D:\nginx-1.19.1\updater-php\hotupdate\%filename%
-xcopy /E /R /Y dist\*               D:\nginx-1.19.1\updater-php\hotupdate\
-
-
-rmdir /S /Q                         D:\hyperink\Desktop\html\hotupdate\
-del /f /s /q                        D:\hyperink\Desktop\html\hotupdate\%filename%
-xcopy /E /R /Y dist\*               D:\hyperink\Desktop\html\hotupdate\
-
-
 del /f /s /q version-file.txt
 del /f /s /q %filename%.spec
 del /f /s /q debug.log
