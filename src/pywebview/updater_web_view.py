@@ -28,6 +28,10 @@ settings.update({
 class UpdaterWebView:
     def __init__(self, entry, onStart=None, width=800, height=600):
         self.entry = entry
+        self.javascriptLock = threading.Lock()
+        self.loggingLock = threading.Lock()
+        self.exitLock = threading.Lock()
+        self.configCef()
 
         self.lock = threading.Lock()
 
@@ -37,7 +41,9 @@ class UpdaterWebView:
         info('Using '+('internal' if usingInternalAssets else 'external')+' Assets')
         info('Load Assets: '+url)
 
-        self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height, text_select=True)
+        self.windowClosed = False
+        self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height,
+                                                    text_select=True)
         self.onStart = onStart
 
         class Monitor(logging.StreamHandler):
@@ -49,6 +55,8 @@ class UpdaterWebView:
         logging.getLogger('pywebview').addHandler(Monitor())
 
     def onInit(self, window):
+        self.exitLock.acquire()
+
         if self.onStart is not None:
             self.onStart(window)
 
@@ -69,11 +77,18 @@ class UpdaterWebView:
         self.window.restore()
 
     def close(self):
-        try:
-            self.window.destroy()
-        except KeyError:
-            logger.warn('KeyError')
-            pass
+        if not self.closed:
+            # 如果由JS调用本方法，恰好又是同步调佣destory()的话，会出现依赖锁死导致报错
+            threading.Thread(target=lambda: self.window.destroy()).start()
+
+            self.windowClosed = True
+
+        if self.exitLock.locked():
+            self.exitLock.release()
+
+    @property
+    def closed(self):
+        return self.windowClosed
 
     def execute(self, command):
         try:
@@ -90,7 +105,7 @@ class UpdaterWebView:
 
     def evaluateJs(self, statement):
         try:
-            with self.lock:
+            with self.javascriptLock:
                 self.window.evaluate_js(statement)
         except BaseException:
             logger.error('+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
@@ -104,7 +119,7 @@ class UpdaterWebView:
             argText = argText[:-1]
 
         statement = rf'callback.{name}({argText})'
-        with self.lock:
+        with self.loggingLock:
             logger.debug('Statement: ' + statement)
         self.evaluateJs(statement)
 

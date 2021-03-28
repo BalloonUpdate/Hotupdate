@@ -100,6 +100,14 @@ class Entry:
                 np = NewUpdater(self)
                 np.main(response1, settingsJson)
 
+            if 'hold_ui' in settingsJson and settingsJson['hold_ui']:
+                self.webview.exitLock.acquire()
+            else:
+                if settingsJson['visible_time'] >= 0:
+                    time.sleep(settingsJson['visible_time'] / 1000)
+
+            info('Webview Cleanup')
+
         except BasicDisplayableError as e:
             logger.error('Displayable Exception: ' + traceback.format_exc())
             self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False,

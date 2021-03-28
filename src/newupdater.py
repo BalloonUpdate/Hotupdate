@@ -66,11 +66,6 @@ class NewUpdater:
 
         webview.invokeCallback('cleanup')
 
-        if settingsJson['visible_time'] >= 0:
-            time.sleep(settingsJson['visible_time'] / 1000)
-
-        info('Webview Cleanup')
-
     def download(self, rootDir, workMode):
         webview: UpdaterWebView = self.e.webview
 

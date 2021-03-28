@@ -29,11 +29,13 @@ class DebugLogger(logging.Logger):
         return logging.Formatter(fmt=lineFormat, datefmt=dateFormat)
 
 
-logFile = File(sys.executable).parent.parent('logs/updater.log') if not inDev else File('debug-workdir/logs/updater.log')
+pathInDev = File('debug-workdir/.minecraft/logs/updater.log')
+pathInProd = File(sys.executable).parent.parent('logs/updater.log')
+logFile = pathInDev if inDev else pathInProd
 logFile.makeParentDirs()
 logFile.clear()
 logger = DebugLogger(logFile)
-logger.info('Log file location: '+logFile.path)
+logger.info('Log file location: ' + logFile.path)
 
 
 def info(text):

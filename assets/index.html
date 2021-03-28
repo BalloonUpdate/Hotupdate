@@ -83,10 +83,32 @@
 			margin: 0;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 		}
+
+		#exit-button {
+			z-index: 1;
+			position: fixed;
+			top: 0;
+			left: 0;
+			bottom: 0;
+			right: 0;
+			display: flex;
+			display: none;
+			align-items: center;
+    		justify-content: center;
+			background-color: #ffffff42;
+		}
+		#exit-button button {
+			width: 100px;
+			height: 50px;
+		}
 	</style>
 </head>
 
 <body>
+	<div id="exit-button">
+		<button type="button" onclick="updaterApi.close()">Exit</button>
+	</div>
+
 	<div id="bg"></div>
 
 	<div id="vue-container">

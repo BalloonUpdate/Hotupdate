@@ -72,6 +72,7 @@ var totalBytes = 0
 var receivedBytes = 0
 var totalFileCount = 0
 var downloadFileCount = 0
+var holdUi = false
 
 var callback = {
     init: (_config) => {
@@ -80,6 +81,9 @@ var callback = {
         config = _config
         
         $('#bg').css('background-image', 'url(\'loading.gif\')')
+
+        if('hold_ui' in _config && _config.hold_ui)
+            holdUi = true
     },
     check_for_upgrade: (url) => {
     },
@@ -185,6 +189,9 @@ var callback = {
     cleanup: () => {
         updaterApi.setTitle('正在结束..')
         vue.progressText = '正在结束..'
+
+        if(holdUi)
+            $('#exit-button').css('display', 'flex')
     },
 
     alert: (text) => {

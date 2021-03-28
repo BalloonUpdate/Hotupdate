@@ -49,10 +49,15 @@ class BaseWorkMode(ABC):
         if len(self.regexes) == 0:
             return False
 
-        results = [
-            re.match(reg, path) is not None
-            for reg in self.regexes
-        ]
+        results = []
+        for reg in self.regexes:
+            plain = reg.startswith('@')
+
+            if plain:
+                reg = reg[1:]
+                reg = re.escape(reg)
+
+            results += [re.match(reg, path) is not None]
 
         result = self.regexesMode
 
