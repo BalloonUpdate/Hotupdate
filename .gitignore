@@ -5,6 +5,8 @@ logs.txt
 .minecraft/
 debug-workdir/
 version-file.txt
+/devbuild.cmd
+
 
 
 # Byte-compiled / optimized / DLL files
