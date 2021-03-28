@@ -6,7 +6,7 @@ import threading
 import time
 import traceback
 import webview
-from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR
+from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR, LOGSEVERITY_WARNING, LOGSEVERITY_DISABLE
 
 from webview import Window
 
@@ -14,15 +14,6 @@ from src.common import inDev
 from src.utils.logger import info, logger
 from webview.platforms.cef import settings
 
-settings.update({
-    'persist_session_cookies': True,
-    'context_menu': {
-        'view_source': True,
-        'devtools': True
-    },
-    'debug': True,
-    'log_severity': LOGSEVERITY_ERROR if inDev else LOGSEVERITY_INFO,
-})
 
 class UpdaterWebView:
     def __init__(self, entry, onStart=None, width=800, height=600):
@@ -35,8 +26,8 @@ class UpdaterWebView:
         externalAssets = entry.exe.parent('assets/index.html')
         usingInternalAssets = inDev or not externalAssets.exists
         url = 'assets/index.html' if usingInternalAssets else externalAssets.path
-        info('Using '+('internal' if usingInternalAssets else 'external')+' Assets')
-        info('Load Assets: '+url)
+        info('Using ' + ('Internal' if usingInternalAssets else 'External') + ' Assets')
+        info('Load Assets: ' + url)
 
         self.windowClosed = False
         self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height,
@@ -51,6 +42,17 @@ class UpdaterWebView:
 
         logging.getLogger('pywebview').addHandler(Monitor())
 
+    def configCef(self):
+        settings.update({
+            'context_menu': {
+                'view_source': True,
+                'devtools': True
+            },
+            'debug': False,
+            'log_file': self.entry.workDir('.minecraft/logs/updater-cef.log').path,
+            'log_severity': LOGSEVERITY_DISABLE
+        })
+
     def onInit(self, window):
         self.exitLock.acquire()
 
@@ -58,8 +60,10 @@ class UpdaterWebView:
             self.onStart(window)
 
     def start(self):
-        webview.start(func=self.onInit, args=self.window, gui='cef', http_server=True, debug=True)
-        # webview.start(func=self.onInit, args=self.window, http_server=True)
+        uSettings = self.entry.getSettingsJson()
+        cef_with_httpserver = uSettings['cef_with_httpserver'] if 'cef_with_httpserver' in uSettings else True
+
+        webview.start(func=self.onInit, args=self.window, gui='cef', http_server=cef_with_httpserver, debug=True)
 
     def setTitle(self, title):
         self.window.set_title(title)
