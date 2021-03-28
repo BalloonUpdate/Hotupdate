@@ -2,6 +2,21 @@ var pywebview = pywebview || {
     api: {
         setTitle: (title) => {
             $('title').html(title)
+        },
+        toggleFullscreen: () => {
+            console.log('toggleFullscreen()')
+        },
+        minimize: () => {
+            console.log('minimize()')
+        },
+        restore: () => {
+            console.log('restore()')
+        },
+        close: () => {
+            console.log('close()')
+        },
+        execute: (command) => {
+            console.log('Execute: '+command)
         }
     }
 }
