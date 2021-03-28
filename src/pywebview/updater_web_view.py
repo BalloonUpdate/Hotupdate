@@ -24,7 +24,6 @@ settings.update({
     'log_severity': LOGSEVERITY_ERROR if inDev else LOGSEVERITY_INFO,
 })
 
-
 class UpdaterWebView:
     def __init__(self, entry, onStart=None, width=800, height=600):
         self.entry = entry
@@ -32,8 +31,6 @@ class UpdaterWebView:
         self.loggingLock = threading.Lock()
         self.exitLock = threading.Lock()
         self.configCef()
-
-        self.lock = threading.Lock()
 
         externalAssets = entry.exe.parent('assets/index.html')
         usingInternalAssets = inDev or not externalAssets.exists
@@ -99,6 +96,9 @@ class UpdaterWebView:
 
     def alert(self, message):
         self.invokeCallback('alert', message)
+
+    def info(self, message):
+        self.evaluateJs('console.log("'+message+'")')
 
     def dialog(self, title, content):
         self.alert(title + ': ' + content)

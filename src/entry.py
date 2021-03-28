@@ -122,7 +122,8 @@ class Entry:
                                         True, traceback.format_exc())
             self.exitcode = 1
         finally:
-            self.webview.close()
+            if not self.webview.windowClosed:
+                self.webview.close()
 
     def main(self):
         width = 600
