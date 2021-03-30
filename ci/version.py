@@ -1,8 +1,9 @@
 import sys
 import os
+import time
 
 productName = 'UpdaterHotupdatePackage'
-productVersion = '2.6.4'
+productVersion = time.strftime('%y-%m-%d_%H-%M-%S')
 
 if 'tag_name' in os.environ:
     productVersion = os.environ['tag_name']
