@@ -140,10 +140,9 @@ class Entry:
         except BaseException:
             pass
 
-        def onStart(window):
-            threading.Thread(target=self.work, daemon=True).start()
+        workThread = threading.Thread(target=self.work, daemon=True)
 
-        self.webview = UpdaterWebView(self, onStart=onStart, width=width, height=height)
+        self.webview = UpdaterWebView(self, onStart=lambda window: workThread.start(), width=width, height=height)
         self.webview.start()
 
         info('Webview Exited with exit code ' + str(self.exitcode))
