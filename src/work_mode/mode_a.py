@@ -25,38 +25,46 @@ class AMode(BaseWorkMode):
             parent = ''
         thisPath = parent + ('/' if parent != '' else '') + t['name']
 
-        if parent == '':
-            logger.debug('D:CheckForSubfolder: parent:' + parent + ' | ' + debug + '=> ')
-        else:
-            logger.debug(debug + '- ')
+        logText = 'D:Check: ' + debug + t['name']
 
+        ret = False
         if 'tree' in t:
-            logger.debug('D:IsDirectory: ' + thisPath)
+            logText += '/'
+            logger.debug(logText)
+
             ret = False
             for tt in t['tree']:
                 ret |= self.checkSubFolder(tt, thisPath, debug + '    ')
-            return ret
         else:
             ret = self.test(thisPath)
-            logger.debug('D:SingleFile: ' + thisPath + '       - ' + str(ret))
-            return ret
+            logText += ' ' + str(ret)
+            logger.debug(logText)
 
-    def checkSubFolder2(self, d: File, parent: str):
+        return ret
+
+    def checkSubFolder2(self, d: File, parent: str, debug=''):
         """检查指定路径是否有 路径可匹配的 子目录"""
 
         if parent == '.' or parent == './':
             parent = ''
-
         thisPath = parent + ('/' if parent != '' else '') + d.name
 
+        logText = 'E:Check: ' + debug + d.name
+
+        ret = False
         if d.isDirectory:
+            logText += '/'
+            logger.debug(logText)
+
             ret = False
             for dd in d:
-                ret |= self.checkSubFolder2(dd, thisPath)
-            return ret
+                ret |= self.checkSubFolder2(dd, thisPath, debug + '    ')
         else:
             ret = self.test(thisPath)
-            return ret
+            logText += ' ' + str(ret)
+            logger.debug(logText)
+
+        return ret
 
     def scanDownloadableFiles(self, dir: File, tree: list, base: File):
         """只扫描需要下载的文件(不包括被删除的)
@@ -72,11 +80,12 @@ class AMode(BaseWorkMode):
             judgementA = self.test(dPath)
             judgementB = self.checkSubFolder(t, dir.relPath(base))
 
-            logger.debug('D:Result: ' + dPath + "  A: " + str(judgementA) + "   b: " + str(judgementB) + '  |  ' + dir.relPath(base))
+            logger.debug('D:Result: ' + dPath + "  direct: " + str(judgementA) + "   indirect: " + str(judgementB))
+            logger.debug('')
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not judgementA and not judgementB:
-                logger.debug('D:Skip: ' + str(t))
+                # logger.debug('D:Skip: ' + str(t))
                 continue
 
             if not dd.exists:  # 文件不存在的话就不用校验直接进行下载
@@ -116,8 +125,12 @@ class AMode(BaseWorkMode):
             judgementA = self.test(dPath)
             judgementB = self.checkSubFolder2(d, dir.relPath(base))
 
+            logger.debug('E:Result: ' + dPath + "  direct: " + str(judgementA) + "   indirect: " + str(judgementB))
+            logger.debug('')
+
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not judgementA and not judgementB:
+                # logger.debug('E:Del Skip: ' + str(t))
                 continue
 
             if t is not None:  # 如果远程端也有这个文件

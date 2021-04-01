@@ -69,9 +69,8 @@ class Entry:
             self.updateApi = (self.serverUrl + '/' + update_info) if not update_info.startswith('http') else update_info
             self.updateSource = (self.serverUrl + '/' + update_dir) if not update_dir.startswith('http') else update_dir
 
-            ver = response1['version']
-            info(F'ServerVersion: {ver}')
-            info(F'HoutupdateVersion: {productVersion}')
+            info('ServerVersion: '+response1['version'])
+            info('HoutupdateVersion: '+productVersion)
 
             # 检查最新版本
             response2 = self.httpGetRequest(self.upgradeApi)
