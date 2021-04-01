@@ -35,7 +35,7 @@ var vue = new Vue({
                 this.items[index]['bold'] = bold
         },
         focusOn: function(path) {
-            let el = $(".item[data='"+path+"']")
+            let el = $(".item[data='"+path.replace('\'', '\\\'')+"']")
             console.log('focus on: '+path)
 
             let list = $('.list')
@@ -79,6 +79,7 @@ var callback = {
         updaterApi.setTitle('正在连接服务器')
         vue.progressText = '正在连接服务器'
         config = _config
+        console.log(_config)
         
         $('#bg').css('background-image', 'url(\'loading.gif\')')
 
@@ -201,10 +202,15 @@ var callback = {
         if(type in ex_translations)
             type += '('+ex_translations[type]+')'
 
-        alert('出现异常: '+type+'\n\n'+detail)
-
-        if(isPyException && confirm('是否显示异常调用栈?'))
-            alert(trackback)
+        if('indev' in config && config['indev'])
+        {
+            alert('出现异常: '+type+'\n\n'+detail+'\n'+trackback)
+        } else {
+            alert('出现异常: '+type+'\n\n'+detail)
+    
+            if(isPyException && confirm('是否显示异常调用栈?'))
+                alert(trackback)
+        }
 
         if(config.error_message && confirm(config.error_message))
             if(config.error_help)

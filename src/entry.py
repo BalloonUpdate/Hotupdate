@@ -46,7 +46,9 @@ class Entry:
 
     def work(self):
         try:
-            self.webview.invokeCallback('init', self.getSettingsJson())
+            initConfig = self.getSettingsJson()
+            initConfig['indev'] = inDev
+            self.webview.invokeCallback('init', initConfig)
 
             # 读取配置文件
             settingsJson = self.getSettingsJson()
