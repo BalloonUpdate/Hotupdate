@@ -10,6 +10,7 @@ from urllib.parse import unquote
 
 import requests
 
+from ci.version import productVersion
 from src.common import inDev
 from src.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
@@ -70,6 +71,7 @@ class Entry:
 
             ver = response1['version']
             info(F'ServerVersion: {ver}')
+            info(F'HoutupdateVersion: {productVersion}')
 
             # 检查最新版本
             response2 = self.httpGetRequest(self.upgradeApi)
