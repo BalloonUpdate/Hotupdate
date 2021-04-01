@@ -19,7 +19,7 @@ class AMode(BaseWorkMode):
                 return n
         return None
 
-    def checkSubFolder(self, t: dict, parent: str, debug=''):
+    def checkSub(self, t: dict, parent: str, debug=''):
         """检查指定路径是否有 路径可匹配的 子目录"""
         if parent == '.' or parent == './':
             parent = ''
@@ -34,7 +34,7 @@ class AMode(BaseWorkMode):
 
             ret = False
             for tt in t['tree']:
-                ret |= self.checkSubFolder(tt, thisPath, debug + '    ')
+                ret |= self.checkSub(tt, thisPath, debug + '    ')
         else:
             ret = self.test(thisPath)
             logText += ' ' + str(ret)
@@ -42,7 +42,7 @@ class AMode(BaseWorkMode):
 
         return ret
 
-    def checkSubFolder2(self, d: File, parent: str, debug=''):
+    def checkSub2(self, d: File, parent: str, debug=''):
         """检查指定路径是否有 路径可匹配的 子目录"""
 
         if parent == '.' or parent == './':
@@ -58,7 +58,7 @@ class AMode(BaseWorkMode):
 
             ret = False
             for dd in d:
-                ret |= self.checkSubFolder2(dd, thisPath, debug + '    ')
+                ret |= self.checkSub2(dd, thisPath, debug + '    ')
         else:
             ret = self.test(thisPath)
             logText += ' ' + str(ret)
@@ -77,14 +77,14 @@ class AMode(BaseWorkMode):
             dd = dir[t['name']]
             dPath = dd.relPath(base)
 
-            judgementA = self.test(dPath)
-            judgementB = self.checkSubFolder(t, dir.relPath(base))
+            resultA = self.test(dPath)
+            resultB = self.checkSub(t, dir.relPath(base))
 
-            logger.debug('D:Result: ' + dPath + "  direct: " + str(judgementA) + "   indirect: " + str(judgementB))
+            logger.debug('D:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
             logger.debug('')
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
-            if not judgementA and not judgementB:
+            if not resultA and not resultB:
                 # logger.debug('D:Skip: ' + str(t))
                 continue
 
@@ -122,25 +122,25 @@ class AMode(BaseWorkMode):
             t = AMode.getNameInTree(d.name, tree)  # 参数获取远程端的对应对象，可能会返回None
             dPath = d.relPath(base)
 
-            judgementA = self.test(dPath)
-            judgementB = self.checkSubFolder2(d, dir.relPath(base))
+            # A=true时,b必定为true
+            resultA = self.test(dPath)
+            resultB = self.checkSub2(d, dir.relPath(base))
 
-            logger.debug('E:Result: ' + dPath + "  direct: " + str(judgementA) + "   indirect: " + str(judgementB))
+            logger.debug('E:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
             logger.debug('')
 
-            # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
-            if not judgementA and not judgementB:
-                # logger.debug('E:Del Skip: ' + str(t))
-                continue
-
-            if t is not None:  # 如果远程端也有这个文件
-                if d.isDirectory:
-                    if 'tree' in t:
-                        # 如果 本地对象 和 远程对象 都是目录，递归调用进行进一步判断
-                        self.scanDeletableFiles(d, t['tree'], base)
-                # 其它情况均由scanDownloadableFiles进行处理了，这里不需要重复判断
-            else:  # 远程端没有有这个文件，就直接删掉好了
-                self.delete(d)
+            if resultA:
+                if t is not None:  # 如果远程端也有这个文件
+                    if d.isDirectory:
+                        if 'tree' in t:
+                            # 如果 本地对象 和 远程对象 都是目录，递归调用进行进一步判断
+                            self.scanDeletableFiles(d, t['tree'], base)
+                    # 其它情况均由scanDownloadableFiles进行处理了，这里不需要重复判断
+                else:  # 远程端没有有这个文件，就直接删掉好了
+                    self.delete(d)
+            elif resultB:  # 此时A必定为false,且d一定是个目录
+                if t is not None:  # 如果远程端也有这个文件，如果没有，则不需要进行进一步判断，直接跳过即可
+                    self.scanDeletableFiles(d, t['tree'], base)
 
     def scan(self, dir: File, tree: list):
         self.scanDownloadableFiles(dir, tree, dir)

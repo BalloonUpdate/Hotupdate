@@ -1,5 +1,6 @@
 import base64
 import json
+import platform
 import sys
 import threading
 import time
@@ -8,15 +9,16 @@ from binascii import Error
 from json import JSONDecodeError
 from urllib.parse import unquote
 
+import psutil
 import requests
 
 from ci.version import productVersion
 from src.common import inDev
 from src.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
     NotInRightPathError, NoSettingsFileError
-from src.hotupdate import HotUpdateHelper
-from src.newupdater import NewUpdater
+from src.update import Update
 from src.pywebview.updater_web_view import UpdaterWebView
+from src.upgrade import Upgrade
 from src.utils.file import File
 from src.utils.logger import info, logger
 
@@ -79,9 +81,9 @@ class Entry:
             remoteFilesStructure = response2
 
             # 与本地进行对比
-            hotupdate = HotUpdateHelper(self)
+            upgrade = Upgrade(self)
             self.webview.invokeCallback('calculate_differences_for_upgrade')
-            comparer = hotupdate.compare(remoteFilesStructure)
+            comparer = upgrade.compare(remoteFilesStructure)
 
             # 如果有需要删除/下载的文件，代表程序需要更新
             if len(comparer.deleteFiles) > 0 or len(comparer.deleteFolders) > 0 or len(comparer.downloadFiles) > 0:
@@ -95,13 +97,13 @@ class Entry:
                 self.webview.invokeCallback('whether_upgrade', True)
                 self.webview.invokeCallback('upgrading_new_files', newFiles)
 
-                hotupdate.main(comparer)
+                upgrade.main(comparer)
             else:
                 self.webview.invokeCallback('whether_upgrade', False)
                 info('There are nothing need updating')
 
-                np = NewUpdater(self)
-                np.main(response1, settingsJson)
+                update = Update(self)
+                update.main(response1, settingsJson)
 
                 if 'hold_ui' in settingsJson and settingsJson['hold_ui']:
                     self.webview.exitLock.acquire()
@@ -131,6 +133,8 @@ class Entry:
     def main(self):
         width = 600
         height = 480
+
+        self.printEnvInfo()
 
         try:
             # 尝试读取窗口宽高
@@ -171,6 +175,12 @@ class Entry:
         else:
             self.workDir = File('debug-workdir')
             self.workDir.mkdirs()
+
+    def printEnvInfo(self):
+        info('S:Architecture: ' + platform.machine())
+        info('S:Processors: ' + str(psutil.cpu_count()))
+        info('S:Operating System: ' + platform.platform())
+        info('S:Memory: ' + str(psutil.virtual_memory()))
 
     def getSettingsJson(self):
         file = self.workDir('.minecraft/updater.settings.json')

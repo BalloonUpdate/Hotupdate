@@ -12,7 +12,7 @@ from src.utils.file_comparer import FileComparer
 from src.utils.logger import info
 
 
-class HotUpdateHelper:
+class Upgrade:
     def __init__(self, entry):
         self.workDir = workDir = entry.workDir
         self.e = entry

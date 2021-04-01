@@ -15,7 +15,7 @@ from src.work_mode.mode_a import AMode
 from src.work_mode.mode_b import BMode
 
 
-class NewUpdater:
+class Update:
     def __init__(self, entry):
         self.e = entry
 
