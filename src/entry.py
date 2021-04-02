@@ -13,17 +13,17 @@ import psutil
 import requests
 
 from ci.version import productVersion
-from src.common import inDev
+from src.common import inDev, devDirectory
 from src.exception.BasicWrappedError import BasicWrappedError
 from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.NoSettingsFileError import NoSettingsFileError
 from src.exception.NotInRightPathError import NotInRightPathError
 from src.exception.UnableToDecodeError import UnableToDecodeError
+from src.logging.LoggingSystem import LogSys, LoggingSystem
 from src.update import Update
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.upgrade import Upgrade
 from src.utils.file import File
-from src.utils.logger import info, logger
 
 
 class Entry:
@@ -76,8 +76,8 @@ class Entry:
             self.updateApi = (self.serverUrl + '/' + update_info) if not update_info.startswith('http') else update_info
             self.updateSource = (self.serverUrl + '/' + update_dir) if not update_dir.startswith('http') else update_dir
 
-            info('ServerVersion: '+response1['version'])
-            info('HoutupdateVersion: '+productVersion)
+            LogSys.info('Environment', 'ServerVersion: '+response1['version'])
+            LogSys.info('Environment', 'HoutupdateVersion: '+productVersion)
 
             # 检查最新版本
             response2 = self.httpGetRequest(self.upgradeApi)
@@ -90,9 +90,9 @@ class Entry:
 
             # 如果有需要删除/下载的文件，代表程序需要更新
             if len(comparer.deleteFiles) > 0 or len(comparer.deleteFolders) > 0 or len(comparer.downloadFiles) > 0:
-                info('Old Files: ' + str(comparer.deleteFiles))
-                info('Old Folders: ' + str(comparer.deleteFolders))
-                info('New Files: ' + str(comparer.downloadFiles))
+                LogSys.info('Compare', 'Old Files: ' + str(comparer.deleteFiles))
+                LogSys.info('Compare', 'Old Folders: ' + str(comparer.deleteFolders))
+                LogSys.info('Compare', 'New Files: ' + str(comparer.downloadFiles))
 
                 # filename, length, hash
                 newFiles = [[filename, length[0], length[1]] for filename, length in comparer.downloadFiles.items()]
@@ -103,7 +103,7 @@ class Entry:
                 upgrade.main(comparer)
             else:
                 self.webview.invokeCallback('whether_upgrade', False)
-                info('There are nothing need updating')
+                LogSys.info('Compare', 'There are nothing need updating')
 
                 update = Update(self)
                 update.main(response1, settingsJson)
@@ -114,15 +114,15 @@ class Entry:
                     if 'visible_time' in settingsJson and settingsJson['visible_time'] >= 0:
                         time.sleep(settingsJson['visible_time'] / 1000)
 
-            info('Webview Cleanup')
+            LogSys.info('Webview', 'Webview Cleanup')
 
         except BasicWrappedError as e:
-            logger.error('BasicWrappedError Exception: ' + traceback.format_exc())
+            LogSys.error('Exception', 'BasicWrappedError Exception: ' + traceback.format_exc())
             self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False,
                                         traceback.format_exc())
             self.exitcode = 1
         except BaseException as e:
-            logger.error('Unknown error occurred: ' + traceback.format_exc())
+            LogSys.error('Exception', 'Python exception raised: ' + traceback.format_exc())
             className = str(e.__class__)
             className = className[className.find('\'') + 1:className.rfind('\'')]
             self.webview.invokeCallback('on_error', className,
@@ -152,7 +152,7 @@ class Entry:
         self.webview = UpdaterWebView(self, onStart=lambda window: workThread.start(), width=width, height=height)
         self.webview.start()
 
-        info('Webview Exited with exit code ' + str(self.exitcode))
+        LogSys.info('Webview', 'Webview Exited with exit code ' + str(self.exitcode))
 
         # ------------
 
@@ -176,14 +176,15 @@ class Entry:
             if '.minecraft' not in self.workDir:
                 raise NotInRightPathError(self.workDir.path)
         else:
-            self.workDir = File('debug-workdir')
+            self.workDir = File(devDirectory)
             self.workDir.mkdirs()
 
-    def printEnvInfo(self):
-        info('S:Architecture: ' + platform.machine())
-        info('S:Processors: ' + str(psutil.cpu_count()))
-        info('S:Operating System: ' + platform.platform())
-        info('S:Memory: ' + str(psutil.virtual_memory()))
+    @staticmethod
+    def printEnvInfo():
+        LogSys.info('Environment', 'S:Architecture: ' + platform.machine())
+        LogSys.info('Environment', 'S:Processors: ' + str(psutil.cpu_count()))
+        LogSys.info('Environment', 'S:Operating System: ' + platform.platform())
+        LogSys.info('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
 
     def getSettingsJson(self):
         file = self.workDir('.minecraft/updater.settings.json')

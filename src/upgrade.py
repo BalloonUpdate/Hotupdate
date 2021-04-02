@@ -9,9 +9,9 @@ from src.common import inDev
 from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
 from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
+from src.logging.LoggingSystem import LogSys
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.file_comparer import FileComparer
-from src.utils.logger import info
 
 
 class Upgrade:
@@ -48,7 +48,7 @@ class Upgrade:
             comparer.deleteFiles = [f for f in comparer.deleteFiles if not f.startswith(exPath)]
             comparer.deleteFolders = [f for f in comparer.deleteFolders if not f.startswith(exPath)]
 
-            info('Exclude: ' + exPath)
+            LogSys.info('Upgrade', 'Exclude: ' + exPath)
 
         return comparer
 
@@ -108,7 +108,7 @@ class Upgrade:
             file = self.tempDir(path)
 
             # 开始下载
-            info('Downloading: ' + file.name)
+            LogSys.info('Upgrade', 'Downloading: ' + file.name)
             webview.invokeCallback('upgrading_downloading', path, 0, 0, length[0])
 
             try:

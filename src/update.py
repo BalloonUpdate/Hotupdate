@@ -8,8 +8,8 @@ from src.common import inDev
 from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
 from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
+from src.logging.LoggingSystem import LogSys
 from src.pywebview.updater_web_view import UpdaterWebView
-from src.utils.logger import info
 from src.work_mode.mode_a import AMode
 from src.work_mode.mode_b import BMode
 
@@ -28,10 +28,10 @@ class Update:
         regexesMode = re['match_all_regexes']
         command = re['command_before_exit']
 
-        info(f'ModeA: {mode}')
-        info(f'Regexes: {regexes}')
-        info(f'RegexesMode: {regexesMode}')
-        info(f'Command: {command}')
+        LogSys.info('Config', f'ModeA: {mode}')
+        LogSys.info('Config', f'Regexes: {regexes}')
+        LogSys.info('Config', f'RegexesMode: {regexesMode}')
+        LogSys.info('Config', f'Command: {command}')
 
         # 检查最新版本
         webview.invokeCallback('check_for_update', self.e.updateApi)
@@ -41,7 +41,7 @@ class Update:
         rootDir.mkdirs()
 
         if inDev:
-            info('In Dev Mode: ' + rootDir.path)
+            LogSys.info('Environment', 'In Dev Mode: ' + rootDir.path)
 
         # 计算文件差异
         webview.invokeCallback('calculate_differences_for_update')
@@ -53,7 +53,7 @@ class Update:
 
         # 删除旧文件
         for path in workMode.deleteList:
-            info('Deleted: ' + path)
+            LogSys.info('Update', 'Deleted: ' + path)
             rootDir(path).delete()
 
         # 开始下载过程
@@ -78,7 +78,7 @@ class Update:
         downloadQueue = Queue(1000000)
         threadPool = ThreadPool(maxParallel)
 
-        print('Count of downloadTask: ' + str(len(workMode.downloadList.items())))
+        LogSys.info('Update', 'Count of downloadTask: ' + str(len(workMode.downloadList.items())))
 
         # 开始下载
         for path, length in workMode.downloadList.items():
@@ -94,7 +94,7 @@ class Update:
                 path = task[2]
                 length = task[3]
 
-                info('Downloading: ' + path + ' from ' + url)
+                LogSys.info('Update', 'Downloading: ' + path + ' from ' + url)
                 webview.invokeCallback('updating_downloading', path, 0, 0, length)
 
                 try:
@@ -106,7 +106,7 @@ class Update:
                         cs = int(length / 1024 / 1)
                         _cs = max(4, min(1024, cs))
                         _chunkSize = 1024 * _cs
-                        info('AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
+                        LogSys.info('Update', 'AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
                     else:
                         _chunkSize = 1024 * chunkSize
                     received = 0

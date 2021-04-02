@@ -11,8 +11,9 @@ from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR, LOGSE
 from webview import Window
 
 from src.common import inDev
-from src.utils.logger import info, logger
 from webview.platforms.cef import settings
+
+from src.logging.LoggingSystem import LogSys
 
 
 class UpdaterWebView:
@@ -26,8 +27,8 @@ class UpdaterWebView:
         externalAssets = entry.exe.parent('assets/index.html')
         usingInternalAssets = inDev or not externalAssets.exists
         url = 'assets/index.html' if usingInternalAssets else externalAssets.path
-        info('Using ' + ('Internal' if usingInternalAssets else 'External') + ' Assets')
-        info('Load Assets: ' + url)
+        LogSys.info('Webview', 'Using ' + ('Internal' if usingInternalAssets else 'External') + ' Assets')
+        LogSys.info('Webview', 'Load Assets: ' + url)
 
         self.windowClosed = False
         self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height,
@@ -36,9 +37,9 @@ class UpdaterWebView:
 
         class Monitor(logging.StreamHandler):
             def emit(self, record: logging.LogRecord) -> None:
-                info('WebView: ' + record.message)
+                LogSys.info('Webview', 'WebView: ' + record.message)
                 if record.exc_info is not None:
-                    logger.error('WebView: ' + record.exc_text)
+                    LogSys.error('Webview', 'WebView: ' + record.exc_text)
 
         logging.getLogger('pywebview').addHandler(Monitor())
 
@@ -95,8 +96,8 @@ class UpdaterWebView:
         try:
             subprocess.call(command, shell=True)
         except Exception as e:
-            logger.error(e)
-            logger.error(traceback.format_exc())
+            LogSys.error('Webview', e)
+            LogSys.error('Webview', traceback.format_exc())
 
     def alert(self, message):
         self.invokeCallback('alert', message)
@@ -112,8 +113,8 @@ class UpdaterWebView:
             with self.javascriptLock:
                 self.window.evaluate_js(statement)
         except BaseException:
-            logger.error('+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            logger.error(traceback.format_exc())
+            LogSys.error('Webview', '+-+-+-+-+-+-+-+--+-+-+-+-+-+-+-+-+-+-+-+-+-')
+            LogSys.error('Webview', traceback.format_exc())
 
     def invokeCallback(self, name, *args):
         argText = ''
@@ -124,7 +125,7 @@ class UpdaterWebView:
 
         statement = rf'callback.{name}({argText})'
         with self.loggingLock:
-            logger.debug('Statement: ' + statement)
+            LogSys.debug('Webview', 'Statement: ' + statement)
         self.evaluateJs(statement)
 
     # def setSize(self, width, height):
