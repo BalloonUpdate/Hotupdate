@@ -1,9 +1,11 @@
 {
-    "url": "http://127.0.0.1:802",
+    "url": "http://127.0.0.1:807",
     "visible_time": 500,
     "width": 600,
     "height": 480,
-    "parallel": 16,
-    "error_message": "是否需要打开服务器官网下载完整客户端?",
-    "error_help": "start https://www.baidu.com"
+    "parallel": 4,
+    "error_message1": "是否需要打开服务器官网下载完整客户端?",
+    "error_help1": "start https://www.baidu.com",
+    "cef_with_httpserver": false,
+    "hold_ui": false
 }
