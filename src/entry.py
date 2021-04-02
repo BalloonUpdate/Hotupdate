@@ -14,8 +14,11 @@ import requests
 
 from ci.version import productVersion
 from src.common import inDev
-from src.exception.displayable_error import BasicDisplayableError, FailedToConnectError, UnableToDecodeError, \
-    NotInRightPathError, NoSettingsFileError
+from src.exception.BasicWrappedError import BasicWrappedError
+from src.exception.FailedToConnectError import FailedToConnectError
+from src.exception.NoSettingsFileError import NoSettingsFileError
+from src.exception.NotInRightPathError import NotInRightPathError
+from src.exception.UnableToDecodeError import UnableToDecodeError
 from src.update import Update
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.upgrade import Upgrade
@@ -113,8 +116,8 @@ class Entry:
 
             info('Webview Cleanup')
 
-        except BasicDisplayableError as e:
-            logger.error('Displayable Exception: ' + traceback.format_exc())
+        except BasicWrappedError as e:
+            logger.error('BasicWrappedError Exception: ' + traceback.format_exc())
             self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False,
                                         traceback.format_exc())
             self.exitcode = 1

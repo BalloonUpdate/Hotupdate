@@ -6,7 +6,9 @@ import time
 import requests
 
 from src.common import inDev
-from src.exception.displayable_error import FailedToConnectError, UnexpectedTransmissionError, UnexpectedHttpCodeError
+from src.exception.FailedToConnectError import FailedToConnectError
+from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
+from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.file_comparer import FileComparer
 from src.utils.logger import info
