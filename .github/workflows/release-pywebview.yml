@@ -39,7 +39,6 @@ jobs:
           Copy-Item ci\fix\hook-cefpython3.py C:\hostedtoolcache\windows\Python\3.7.9\x64\Lib\site-packages\PyInstaller\hooks
           python ci\generate_version_file.py
           C:\hostedtoolcache\windows\Python\3.7.9\x64\Scripts\pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." --add-binary="assets;assets" --add-binary="v4.0.30319;dotnet" -i icon.ico -F -w -n UpdaterHotupdatePackage main.py
-          C:\hostedtoolcache\windows\Python\3.7.9\x64\Scripts\pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." --add-binary="assets;assets" --add-binary="v4.0.30319;dotnet" -i icon.ico -F -c -n UpdaterHotupdatePackage_Console main.py
           dir
 
       - name: Print Hashes
@@ -52,11 +51,6 @@ jobs:
           python ci\sha1.py dist\UpdaterHotupdatePackage.exe
           echo "SHA1 for dist\UpdaterHotupdatePackage.exe:"
           python ci\md5.py dist\UpdaterHotupdatePackage.exe
-          echo ---------------------------
-          echo "MD5 for dist\UpdaterHotupdatePackage_Console.exe:"
-          python ci\sha1.py dist\UpdaterHotupdatePackage_Console.exe
-          echo "SHA1 for dist\UpdaterHotupdatePackage_Console.exe:"
-          python ci\md5.py dist\UpdaterHotupdatePackage_Console.exe
       
       - name: Upload To Github Release
         uses: xresloader/upload-to-github-release@v1.3.0
