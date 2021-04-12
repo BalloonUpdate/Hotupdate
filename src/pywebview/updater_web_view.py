@@ -66,6 +66,18 @@ class UpdaterWebView:
 
         webview.start(func=self.onInit, args=self.window, gui='cef', http_server=cef_with_httpserver, debug=True)
 
+    def startUpdate(self):
+        LogSys.info('WebView', 'startUpdate ')
+        if self.entry.updateLock.locked:
+            self.entry.updateLock.release()
+
+    def getUrl(self):
+        return self.window.get_current_url()
+
+    def loadUrl(self, url):
+        LogSys.info('WebView', 'LoadUrl: '+url)
+        self.window.load_url(url)
+
     def setTitle(self, title):
         self.window.set_title(title)
 

@@ -17,6 +17,15 @@ var pywebview = pywebview || {
         },
         execute: (command) => {
             console.log('Execute: '+command)
+        },
+        getUrl: () => {
+            return location.pathname
+        },
+        loadUrl: (url) => {
+            window.open(url)
+        },
+        start: () => {
+            console.log('startUpdate!')
         }
     }
 }
@@ -39,5 +48,14 @@ var updaterApi = {
     },
     execute: (command) => {
         pywebview.api.execute(command)
+    },
+    getUrl: () => {
+        return pywebview.api.getUrl()
+    },
+    loadUrl: (url) => {
+        pywebview.api.loadUrl(url)
+    },
+    start: () => {
+        pywebview.api.startUpdate()
     }
 }

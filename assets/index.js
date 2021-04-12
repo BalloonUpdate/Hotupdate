@@ -85,6 +85,10 @@ var callback = {
 
         if('hold_ui' in _config && _config.hold_ui)
             holdUi = true
+
+        setTimeout(() => {
+            updaterApi.start()
+        }, 50);
     },
     check_for_upgrade: (url) => {
     },

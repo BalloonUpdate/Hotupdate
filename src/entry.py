@@ -37,6 +37,8 @@ class Entry:
         self.updateSource = ''
         self.exitcode = 0
 
+        self.updateLock = threading.Lock()
+
         # PyWebview
         self.webview: UpdaterWebView = None
 
@@ -54,6 +56,9 @@ class Entry:
             initConfig = self.getSettingsJson()
             initConfig['indev'] = inDev
             self.webview.invokeCallback('init', initConfig)
+
+            self.updateLock.acquire()
+            self.updateLock.acquire()
 
             # 读取配置文件
             settingsJson = self.getSettingsJson()
