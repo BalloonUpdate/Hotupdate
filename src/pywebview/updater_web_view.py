@@ -24,10 +24,22 @@ class UpdaterWebView:
         self.exitLock = threading.Lock()
         self.configCef()
 
+        config = entry.getSettingsJson()
+
         externalAssets = entry.exe.parent('assets/index.html')
+        usingRemoteAssets = 'interface' in config
         usingInternalAssets = inDev or not externalAssets.exists
-        url = 'assets/index.html' if usingInternalAssets else externalAssets.path
-        LogSys.info('Webview', 'Using ' + ('Internal' if usingInternalAssets else 'External') + ' Assets')
+
+        if usingRemoteAssets:
+            LogSys.info('Webview', 'Using Remote Assets')
+            url = config['interface']
+        elif usingInternalAssets:
+            LogSys.info('Webview', 'Using Internal Assets')
+            url = 'assets/index.html'
+        else:
+            LogSys.info('Webview', 'Using External Assets')
+            url = externalAssets.path
+
         LogSys.info('Webview', 'Load Assets: ' + url)
 
         self.windowClosed = False
