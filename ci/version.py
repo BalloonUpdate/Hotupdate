@@ -3,10 +3,7 @@ import os
 import time
 
 productName = 'UpdaterHotupdatePackage'
-productVersion = time.strftime('%y-%m-%d_%H-%M-%S')
-
-if 'tag_name' in os.environ:
-    productVersion = os.environ['tag_name']
+productVersion = time.strftime('%y-%m-%d_%H-%M-%S') if 'tag_name' not in os.environ else os.environ['tag_name']
 
 
 if __name__ == "__main__":
