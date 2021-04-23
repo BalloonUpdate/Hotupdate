@@ -59,8 +59,8 @@ class Update:
         # 开始下载过程
         self.download(rootDir, workMode)
 
-        # 如果被打包就执行一下退出前命令
-        if inDev and command != '':
+        # 如果没被打包就执行一下退出前命令
+        if not inDev and command != '':
             subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
 
         webview.invokeCallback('cleanup')
