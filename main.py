@@ -22,6 +22,8 @@ if __name__ == "__main__":
 
         entry = Entry()
         entry.main()
+    except SystemExit:
+        pass
     except BaseException:
         print(traceback.format_exc())
         errorFile = File('updater.error.log') if not inDev else File(devDirectory + '/updater.error.log')
