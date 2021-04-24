@@ -30,32 +30,12 @@
 			background-size: 120px;
 		}
 		#vue-container {
+			padding: 6px;
+			overflow: hidden;
+    		box-sizing: border-box;
 			height: 100%;
 			display: flex;
 			flex-direction: column;
-		}
-		.list {
-			height: 100%;
-			flex-grow: 1;
-			overflow: auto;
-		}
-		.item {
-			white-space: nowrap;
-			margin: 4px 0px;
-		}
-		.item-progress {
-			border-radius: 8px;
-			background-color: #b4f1bf;
-			position: absolute; 
-			top: 0; 
-			left: 0; 
-			bottom: 0; 
-			right: 0; 
-			z-index: -1;
-		}
-		.item * {
-			display: inline-block;
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 		}
 		.progress {
 			width: 60px;
@@ -64,15 +44,18 @@
 			position: relative;
 		}
 		.progress-bar-fill {
-			border-radius: 13px;
 			height: 30px; 
-			background-color: #d0d0d0;
 			position: absolute; 
 			top: 0; 
 			left: 0; 
 			bottom: 0; 
 			right: 0; 
 			z-index: -1;
+
+			background: #dadada repeating-linear-gradient(-45deg,#d2d2d2,#d2d2d2 1.125rem,transparent 1.125rem,transparent 2.25rem);
+			box-shadow: 0 2px 5px rgb(0 0 0 / 15%);
+			border-radius: 5px;
+			color: #555555;
 		}
 		.message {
 			text-align: center;
@@ -108,34 +91,25 @@
 	<div id="exit-button">
 		<button type="button" onclick="updaterApi.close()">Exit</button>
 	</div>
-
-	<div id="bg"></div>
+	
+	<div id="bg""></div>
 
 	<div id="vue-container">
-		<div class="list">
-			<div class="item"
-				v-for="i in items"
-				v-bind:key="i.path"
-				v-if="i.progress<1000"
-				v-bind:style="i.bold?'font-weight: bold;':''"
-				v-bind:data="i.path"
-			>
-				<div style="position: relative; width: 100%;">
-					<div class="item-progress"
-						v-bind:style="'width: '+getItemProgress(i.progress)/10.0+'%'"
-					></div>
-					<div class="progress">{{i.progress/10.0+'%'}}</div>
-					<div class="path">{{i.path}}</div>
-				</div>
-			</div>
+
+		<div class="progress-bar" style="margin-bottom: 16px;">
+			<div class="progress-bar-fill"
+				v-bind:style="'width: '+currentProgress/100.0+'%'"
+			></div>
+			<div class="message"><pre>{{currentProgressText}}</pre></div>
 		</div>
 
 		<div class="progress-bar">
 			<div class="progress-bar-fill"
-				v-bind:style="'width: '+progress/10.0+'%'"
+				v-bind:style="'width: '+totalProgress/100.0+'%'"
 			></div>
-			<div class="message"><pre>{{progressText}}</pre></div>
+			<div class="message"><pre>{{totalProgressText}}</pre></div>
 		</div>
+
 	</div>
 
 	<script src="updaterApi.js"></script>

@@ -1,58 +1,10 @@
 var vue = new Vue({
     el: '#vue-container',
     data: {
-        progressText: '',
-        progress: 0,
-        items: [
-            // {
-            //     path: 'dddddd/aaaa.txt',
-            //     progress: 0,
-            //     bold: false,
-            // }
-        ]
-    },
-    methods: {
-        topBottom: function() {
-            $(document).scrollTop($(document).height());
-        },
-        findItem: function(path) {
-            let index = 0
-            for (let item of this.items) {
-                if(item['path'] == path)
-                    return index
-                index += 1
-            }
-            return -1
-        },
-        setProgress: function(path, progress) {
-            let index = this.findItem(path)
-            if(index != -1)
-                this.items[index]['progress'] = progress
-        },
-        setBold: function(path, bold) {
-            let index = this.findItem(path)
-            if(index != -1)
-                this.items[index]['bold'] = bold
-        },
-        focusOn: function(path) {
-            let el = $(".item[data='"+path.replace('\'', '\\\'')+"']")
-            console.log('focus on: '+path)
-
-            let list = $('.list')
-            let scroll = list.scrollTop() + el.position().top - ((document.body.clientHeight-30)*0.85)
-            list.stop(true)
-            list.animate({scrollTop: scroll}, 10)
-        },
-        getItemProgress: function(progress) {
-            if(progress<=0)
-                return 0
-            return progress<1000?progress:0
-        },
-        removeItem: function(path) {
-            let index = this.findItem(path)
-            if(index != -1)
-                this.items.splice(index - 1, 1)
-        },
+        currentProgressText: '',
+        currentProgress: 0,
+        totalProgressText: '',
+        totalProgress: 0,
     }
 })
 
@@ -71,158 +23,132 @@ var totalBytes = 0
 var receivedBytes = 0
 var totalFileCount = 0
 var downloadFileCount = 0
-var holdUi = false
 
-updaterApi.addEventListener('init', _config => {
-    updaterApi.setTitle('正在连接服务器')
+updaterApi.on('init', function(_config) {
+    console.log(this)
+    this.setTitle('准备文件更新')
     vue.progressText = '正在连接服务器'
     config = _config
     console.log(_config)
     
-    $('#bg').css('background-image', 'url(\'loading.gif\')')
-
-    if('hold_ui' in _config && _config.hold_ui)
-        holdUi = true
-
-    setTimeout(() => {
-        updaterApi.start()
-    }, 50);
+    setTimeout(() => this.start(), 50);
 })
 
-updaterApi.addEventListener('calculate_differences_for_upgrade', () => {
-    updaterApi.setTitle('检查升级..')
-    vue.progressText = '检查升级..'
+updaterApi.on('calculate_differences_for_upgrade', function() {
+    this.setTitle('检查文件')
+    vue.progressText = '检查文件..'
 })
 
-updaterApi.addEventListener('whether_upgrade', isupgrade => {
-    vue.items = []
-    if(isupgrade) {
-        updaterApi.setTitle('正在升级')
-        vue.progressText = '正在升级'
-    } else {
-        updaterApi.setTitle('正在更新文件')
-        vue.progressText = '正在更新文件'
-    }
+updaterApi.on('whether_upgrade', function(isupgrade) {
+    this.setTitle('正在更新文件')
+    vue.progressText = '正在更新文件'
 })
 
-
-updaterApi.addEventListener('upgrading_new_files', (paths) => {
-    $('#bg').css('background-image', '')
-
+updaterApi.on('upgrading_new_files', function(paths) {
     for(let p of paths) {
         let path = p[0]
         let len = p[1]
         let hash = p[2]
-
         totalBytes += len
-
-        vue.items.push({
-            path: path,
-            progress: 0,
-            bold: false
-        })
     }
 })
 
-updaterApi.addEventListener('upgrading_downloading', (file, recv, bytes, total) => {
+updaterApi.on('upgrading_downloading', function(file, recv, bytes, total) {
     receivedBytes += recv
 
-    vue.setProgress(file, parseInt(bytes/total*1000))
-    updaterApi.setTitle('正在升级 '+parseInt(receivedBytes/totalBytes*100)+'%')
-    vue.progressText = '正在升级 '+parseInt(receivedBytes/totalBytes*100)+'%'
+    vue.currentProgress = parseInt(bytes/total*10000)
+    vue.currentProgressText = file
 
-    if(bytes==total)
-        vue.setBold(file, true)
+    let totalProgress = parseInt(receivedBytes/totalBytes*10000)
+    vue.totalProgress = totalProgress
+    vue.totalProgressText = '正在下载新文件 '+(totalProgress/100)+'%'
+
+    this.setTitle('正在下载新文件 '+(totalProgress/100)+'%')
 })
 
-updaterApi.addEventListener('upgrading_before_installing', () => {
-    updaterApi.setTitle('开始安装更新')
-    vue.progressText = '开始安装更新'
+updaterApi.on('upgrading_before_installing', function() {
+    this.setTitle('开始安装更新包')
+    vue.totalProgressText = '开始安装更新包'
 })
 
 //    -------------------------------------
 
-updaterApi.addEventListener('calculate_differences_for_update', () => {
-    updaterApi.setTitle('校验文件..')
-    vue.progressText = '校验文件..'
+updaterApi.on('calculate_differences_for_update', function() {
+    this.setTitle('检查文件更新中')
+    vue.totalProgressText = '校验文件..'
 })
 
 
-updaterApi.addEventListener('updating_new_files', (paths) => {
-    $('#bg').css('background-image', '')
-
+updaterApi.on('updating_new_files', function(paths) {
     totalFileCount = paths.length
 
     for(let p of paths) {
         let path = p[0]
         let len = p[1]
-
         totalBytes += len
-
-        vue.items.push({
-            path: path,
-            progress: 0,
-            bold: false
-        })
     }
 })
 
-updaterApi.addEventListener('updating_before_downloading', () => {
-    updaterApi.setTitle('下载新文件')
+updaterApi.on('updating_before_downloading', function() {
+    this.setTitle('下载新文件')
 })
 
-updaterApi.addEventListener('updating_downloading', (file, recv, bytes, total) => {
+var lastUpdate = 0
+var lastFile = ''
+updaterApi.on('updating_downloading', function(file, recv, bytes, total) {
     receivedBytes += recv
 
-    // 更新全局信息
-    vue.setProgress(file, parseInt(bytes/total*1000))
+    let filename = file.lastIndexOf('/')!=-1? file.substring(file.lastIndexOf('/')+1):file
+    let ts = new Date().getTime()
 
-    let totalprogress = parseInt(receivedBytes/totalBytes*1000)
-    vue.progress = totalprogress
-    updaterApi.setTitle('正在更新文件 '+(totalprogress/10)+'%')
-    filename = file.split('/').reverse()
-    vue.progressText = (totalprogress/10)+'%    -    '+downloadFileCount+'/'+vue.items.length
+    if(ts-lastUpdate > 1000)
+    {
+        vue.currentProgress = parseInt(bytes/total*10000)
+        vue.currentProgressText = filename
+        lastUpdate = ts
+        lastFile = filename
+    } else {
+        if(lastFile==filename)
+            vue.currentProgress = parseInt(bytes/total*10000)
+    }
 
-    // 下载开始时
-    if(bytes==0)
-        vue.focusOn(file)
-    
+    let totalProgress = parseInt(receivedBytes/totalBytes*10000)
+    vue.totalProgress = totalProgress
+    vue.totalProgressText = (totalProgress/100)+'% - '+(downloadFileCount+1)+'/'+totalFileCount
+
+    this.setTitle('下载新文件 '+parseInt((totalProgress/10)+'')/10+'%')
+
     // 下载完成时
     if(bytes==total)
-    {
-        vue.setBold(file, true)
         downloadFileCount += 1
-    }
 })
 
-updaterApi.addEventListener('cleanup', () => {
-    updaterApi.setTitle('正在结束..')
-    vue.progressText = '正在结束..'
+updaterApi.on('cleanup', function() {
+    this.setTitle('正在结束')
+    vue.totalProgressText = '正在结束'
 
-    if(holdUi)
+    if('hold_ui' in config && config.hold_ui)
         $('#exit-button').css('display', 'flex')
 })
 
-updaterApi.addEventListener('alert', () => {
+updaterApi.on('alert', function() {
     alert(text)
 })
 
-updaterApi.addEventListener('on_error', (type, detail, isPyException, trackback) => {
+updaterApi.on('on_error', function(type, detail, isPyException, trackback) {
     if(type in ex_translations)
         type += '('+ex_translations[type]+')'
 
-    if('indev' in config && config['indev'])
+    alert('出现错误: '+type+'\n\n'+detail)
+    
+    if(!('indev' in config && config['indev']) || true)
     {
-        alert('出现异常: '+type+'\n\n'+detail+'\n'+trackback)
-    } else {
-        alert('出现异常: '+type+'\n\n'+detail)
-
-        if(isPyException && confirm('是否显示异常调用栈?'))
+        if(isPyException && confirm('是否显示错误详情? (请将错误报告给开发者)'))
             alert(trackback)
     }
 
     if(config.error_message && confirm(config.error_message))
         if(config.error_help)
-            updaterApi.execute(config.error_help)
+            this.execute(config.error_help)
 })
 

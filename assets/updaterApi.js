@@ -18,7 +18,7 @@ class UpdaterApi
         document.dispatchEvent(event)
     }
 
-    addEventListener(eventName, callback)
+    on(eventName, callback)
     {
         document.addEventListener(eventName, (e) => {
             callback.bind(this)(...e.detail.args)
@@ -96,10 +96,3 @@ window.addEventListener('pywebviewready', function() {
     console.log('<i>pywebview</i> is ready')
     updaterApi.onPywebviewReady()
 })
-
-// setTimeout(() => {
-//     if(updaterApi.inDev)
-//     {
-
-//     }
-// }, 100);
