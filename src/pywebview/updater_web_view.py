@@ -147,7 +147,7 @@ class UpdaterWebView:
         if argText.endswith(','):
             argText = argText[:-1]
 
-        statement = rf'callback.{name}({argText})'
+        statement = rf'updaterApi.dispatchEvent("{name}", {argText})'
         with self.loggingLock:
             LogSys.debug('Webview', 'Statement: ' + statement)
         self.evaluateJs(statement)
