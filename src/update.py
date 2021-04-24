@@ -73,7 +73,7 @@ class Update:
         # 读取下载并发数和传输大小
         maxParallel = self.e.getSettingsJson()['parallel'] if 'parallel' in self.e.getSettingsJson() else 1
         chunkSize = self.e.getSettingsJson()['chunk_size'] if 'chunk_size' in self.e.getSettingsJson() else 32
-        autoChunkSize = 'chunk_size' not in self.e.getSettingsJson()
+        autoChunkSize = 'chunk_size' in self.e.getSettingsJson() and self.e.getSettingsJson()['chunk_size'] <= 0
 
         downloadQueue = Queue(1000000)
         threadPool = ThreadPool(maxParallel)
@@ -109,6 +109,7 @@ class Update:
                         LogSys.info('Update', 'AutoChunkSize: File: '+path+'  len: '+str(length) + '  chunk: '+str(_cs)+' of '+str(cs))
                     else:
                         _chunkSize = 1024 * chunkSize
+                        LogSys.info('Update', 'ChunkSize: File: ' + path + '  len: ' + str(length) + '  chunk: ' + str(_chunkSize))
                     received = 0
 
                     file.makeParentDirs()
