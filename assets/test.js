@@ -4,13 +4,13 @@ const sleep2 = (timeountMS) => new Promise((resolve) => {
 
 
 async function test_(isupgrade) {
-    callback.init({})
+    updaterApi.dispatchEvent('init', {})
     await sleep2(100)
-    callback.check_for_upgrade('https://baidu.com')
+    updaterApi.dispatchEvent('check_for_upgrade', 'https://baidu.com')
     await sleep2(100)
-    callback.calculate_differences_for_upgrade()
+    updaterApi.dispatchEvent('calculate_differences_for_upgrade')
     await sleep2(100)
-    callback.whether_upgrade(isupgrade)
+    updaterApi.dispatchEvent('whether_upgrade', isupgrade)
     await sleep2(100)
 
     if(isupgrade) {
@@ -22,10 +22,10 @@ async function test_(isupgrade) {
             ['UpdaterHotupdatePackage.exe', 71218479, '8b321031c8b47f2bb6a273171d51b71b039b2579']
         ]
     
-        callback.upgrading_new_files(new_files)
+        updaterApi.dispatchEvent('upgrading_new_files', new_files)
         await sleep2(100)
     
-        callback.upgrading_before_downloading()
+        updaterApi.dispatchEvent('upgrading_before_downloading')
         await sleep2(100)
     
         // 开始下载
@@ -34,16 +34,16 @@ async function test_(isupgrade) {
             let filelen = file[1]
             for(let i=0;i<11;i++) {
                 let recv = i==0?0:parseInt(1/10*filelen)
-                callback.upgrading_downloading(filename, recv, parseInt(i/10*filelen), filelen)
+                updaterApi.dispatchEvent('upgrading_downloading', filename, recv, parseInt(i/10*filelen), filelen)
                 await sleep2(30)
             }
         }
     
-        callback.upgrading_before_installing()
+        updaterApi.dispatchEvent('upgrading_before_installing')
     } else {
-        callback.check_for_update('https://127.0.0.1.com')
+        updaterApi.dispatchEvent('check_for_update', 'https://127.0.0.1.com')
         await sleep2(100)
-        callback.calculate_differences_for_update()
+        updaterApi.dispatchEvent('calculate_differences_for_update')
         await sleep2(100)
 
         await sleep2(2000)
@@ -94,9 +94,9 @@ async function test_(isupgrade) {
             // ['.minecraft/mods17/vue-2.6.12.js', 37246],
         ]
 
-        callback.updating_new_files(new_files)
+        updaterApi.dispatchEvent('updating_new_files', new_files)
         await sleep2(100)
-        callback.updating_before_downloading()
+        updaterApi.dispatchEvent('updating_before_downloading')
 
         for (const file of new_files) {
             let filename = file[0]
@@ -104,14 +104,14 @@ async function test_(isupgrade) {
             let count = 20
             for(let i=0;i<count+1;i++) {
                 let recv = i==0?0:parseInt(1/count*filelen)
-                callback.updating_downloading(filename, recv, parseInt(i/count*filelen), filelen)
+                updaterApi.dispatchEvent('updating_downloading', filename, recv, parseInt(i/count*filelen), filelen)
                 // await sleep2(Range(50, 500))
                 await sleep2(Range(50, 90))
             }
         }
 
         await sleep2(100)
-        callback.cleanup()
+        updaterApi.dispatchEvent('cleanup')
     }
 }
 
