@@ -90,7 +90,6 @@ class Entry:
 
             # 与本地进行对比
             upgrade = Upgrade(self)
-            self.webview.invokeCallback('calculate_differences_for_upgrade')
             comparer = upgrade.compare(remoteFilesStructure)
 
             # 如果有需要删除/下载的文件，代表程序需要更新

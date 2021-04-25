@@ -44,7 +44,6 @@ class Update:
             LogSys.info('Environment', 'In Dev Mode: ' + rootDir.path)
 
         # 计算文件差异
-        webview.invokeCallback('calculate_differences_for_update')
         workMode = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
 
         # 显示需要下载的新文件
@@ -67,8 +66,6 @@ class Update:
 
     def download(self, rootDir, workMode):
         webview: UpdaterWebView = self.e.webview
-
-        webview.invokeCallback('updating_before_downloading')
 
         # 读取下载并发数和传输大小
         maxParallel = self.e.getSettingsJson()['parallel'] if 'parallel' in self.e.getSettingsJson() else 1

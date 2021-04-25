@@ -31,7 +31,7 @@ updaterApi.on('init', function(_config) {
     config = _config
     console.log(_config)
     
-    setTimeout(() => this.start(), 50);
+    this.start()
 })
 
 updaterApi.on('calculate_differences_for_upgrade', function() {
@@ -87,9 +87,7 @@ updaterApi.on('updating_new_files', function(paths) {
         let len = p[1]
         totalBytes += len
     }
-})
 
-updaterApi.on('updating_before_downloading', function() {
     this.setTitle('下载新文件')
 })
 

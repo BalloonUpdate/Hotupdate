@@ -135,8 +135,6 @@ class Upgrade:
         # 生成升级脚本
         batchText = self.generateBatchStatements(comparer)
 
-        webview.invokeCallback('upgrading_before_downloading')
-
         # 下载文件
         self.downloadFiles(comparer)
 
