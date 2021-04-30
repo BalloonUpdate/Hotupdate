@@ -70,7 +70,7 @@ class Upgrade:
         set /a count=%count%-1
         
         if "%Running%" NEQ "" (
-            ping -n 1 127.0.0.1 > nul 
+            ping -n 2 127.0.0.1 > nul 
             set Running=
             goto check
         )
