@@ -3,7 +3,6 @@ import json
 import platform
 import sys
 import threading
-import time
 import traceback
 from binascii import Error
 from json import JSONDecodeError
@@ -19,9 +18,9 @@ from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.NoSettingsFileError import NoSettingsFileError
 from src.exception.NotInRightPathError import NotInRightPathError
 from src.exception.UnableToDecodeError import UnableToDecodeError
-from src.logging.LoggingSystem import LogSys, LoggingSystem
-from src.update import Update
+from src.logging.LoggingSystem import LogSys
 from src.pywebview.updater_web_view import UpdaterWebView
+from src.update import Update
 from src.upgrade import Upgrade
 from src.utils.file import File
 
@@ -30,89 +29,60 @@ class Entry:
     def __init__(self):
         self.workDir = None
         self.exe = File(sys.executable)
-        self.serverUrl = ''
-        self.upgradeApi = ''  # 软件自升级的API
+        self.baseUrl = ''
+        self.upgradeUrl = ''
+        self.updateUrl = ''
         self.upgradeSource = ''
-        self.updateApi = ''  # 文件更新的API
         self.updateSource = ''
         self.exitcode = 0
 
         self.updateLock = threading.Lock()
 
-        # PyWebview
         self.webview: UpdaterWebView = None
 
         self.initializeWorkDirectory()
+        self.clearSignalFile()
 
-        # 删除上次遗留的信号文件
-        hotupdateSignal = self.exe.parent('updater.hotupdate.signal')
-        errorSignal = self.exe.parent('updater.error.signal')
-
-        hotupdateSignal.delete()
-        errorSignal.delete()
-
-    def work(self):
+    def workThread(self):
+        """工作线程"""
         try:
-            initConfig = self.getSettingsJson()
-            initConfig['indev'] = inDev
-            self.webview.invokeCallback('init', initConfig)
+            self.webview.invokeCallback('init', {**self.settingsJson, 'indev': inDev})
 
+            # 等待开始更新的信号
             self.updateLock.acquire()
             self.updateLock.acquire()
 
-            # 读取配置文件
-            settingsJson = self.getSettingsJson()
+            serverInfo = self.fetchInfo()
 
-            # 从文件读取服务端url并解码
-            self.serverUrl = self.decodeUrl(settingsJson['url'])
-
-            # 发起请求并处理返回的数据
-            index = ('/' + settingsJson['index']) if 'index' in settingsJson else ''
-            self.webview.invokeCallback('check_for_upgrade', self.serverUrl + index)
-            response1 = self.httpGetRequest(self.serverUrl + index)
-            upgrade_info = response1['upgrade_info']
-            upgrade_dir = response1['upgrade_dir']
-            update_info = response1['update_info']
-            update_dir = response1['update_dir']
-            self.upgradeApi = (self.serverUrl + '/' + upgrade_info) if not upgrade_info.startswith(
-                'http') else upgrade_info
-            self.upgradeSource = (self.serverUrl + '/' + upgrade_dir) if not upgrade_dir.startswith(
-                'http') else upgrade_dir
-            self.updateApi = (self.serverUrl + '/' + update_info) if not update_info.startswith('http') else update_info
-            self.updateSource = (self.serverUrl + '/' + update_dir) if not update_dir.startswith('http') else update_dir
-
-            LogSys.info('Environment', 'ServerVersion: '+response1['version'])
-            LogSys.info('Environment', 'HoutupdateVersion: '+productVersion)
-
-            # 检查最新版本
-            response2 = self.httpGetRequest(self.upgradeApi)
-            remoteFilesStructure = response2
-
-            # 与本地进行对比
+            # 检查是否有新版本需要升级
+            remoteFilesStructure = self.httpGet(self.upgradeUrl)
             upgrade = Upgrade(self)
-            comparer = upgrade.compare(remoteFilesStructure)
+            compare = upgrade.compare(remoteFilesStructure)
 
             # 如果有需要删除/下载的文件，代表程序需要更新
-            if len(comparer.deleteFiles) > 0 or len(comparer.deleteFolders) > 0 or len(comparer.downloadFiles) > 0:
-                LogSys.info('Compare', 'Old Files: ' + str(comparer.deleteFiles))
-                LogSys.info('Compare', 'Old Folders: ' + str(comparer.deleteFolders))
-                LogSys.info('Compare', 'New Files: ' + str(comparer.downloadFiles))
+            if compare.hasDifferent:
+                LogSys.info('Compare', 'Old Files: ' + str(compare.deleteFiles))
+                LogSys.info('Compare', 'Old Folders: ' + str(compare.deleteFolders))
+                LogSys.info('Compare', 'New Files: ' + str(compare.downloadFiles))
+                LogSys.info('Compare', 'New Folders: ' + str(compare.downloadFolders))
 
+                # 触发回调函数
                 # filename, length, hash
-                newFiles = [[filename, length[0], length[1]] for filename, length in comparer.downloadFiles.items()]
-                newFiles += [[file, -1] for file in comparer.downloadFolders]
+                newFiles = [[filename, length[0], length[1]] for filename, length in compare.downloadFiles.items()]
+                newFiles += [[file, -1] for file in compare.downloadFolders]
                 self.webview.invokeCallback('whether_upgrade', True)
                 self.webview.invokeCallback('upgrading_new_files', newFiles)
 
-                upgrade.main(comparer)
+                # 进入升级阶段
+                upgrade.main(compare)
             else:
                 self.webview.invokeCallback('whether_upgrade', False)
-                LogSys.info('Compare', 'There are nothing need updating')
+                LogSys.info('Compare', 'There are nothing need update')
 
-                update = Update(self)
-                update.main(response1, settingsJson)
+                # 进入更新阶段
+                Update(self).main(serverInfo, self.settingsJson)
 
-                if 'hold_ui' in settingsJson and settingsJson['hold_ui']:
+                self.webview.exitLock.acquire()
 
             LogSys.info('Webview', 'Webview Cleanup')
 
@@ -133,41 +103,23 @@ class Entry:
             if not self.webview.windowClosed:
                 self.webview.close()
 
-    def main(self):
-        width = 380
-        height = 130
+    def mainThread(self):
+        """主线程/UI线程"""
+        cfg = self.settingsJson
+        width = cfg['width'] if 'width' in cfg else 380
+        height = cfg['height'] if 'height' in cfg else 130
 
         self.printEnvInfo()
 
-        try:
-            # 尝试读取窗口宽高
-            settingsJson = self.getSettingsJson()
-            width = settingsJson['width']
-            height = settingsJson['height']
-        except BaseException:
-            pass
+        workThread = threading.Thread(target=self.workThread, daemon=True)
 
-        workThread = threading.Thread(target=self.work, daemon=True)
-
+        # 启动CEF窗口
         self.webview = UpdaterWebView(self, onStart=lambda window: workThread.start(), width=width, height=height)
         self.webview.start()
 
         LogSys.info('Webview', 'Webview Exited with exit code ' + str(self.exitcode))
 
-        # ------------
-
-        hotupdateSignal = self.exe.parent('updater.hotupdate.signal')
-        errorSignal = self.exe.parent('updater.error.signal')
-
-        hotupdateSignal.delete()
-        errorSignal.delete()
-
-        if self.exitcode == 2:
-            hotupdateSignal.create()
-
-        if self.exitcode == 1:
-            errorSignal.create()
-
+        self.writeSignalFile()
         sys.exit(self.exitcode)
 
     def initializeWorkDirectory(self):
@@ -186,7 +138,65 @@ class Entry:
         LogSys.info('Environment', 'S:Operating System: ' + platform.platform())
         LogSys.info('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
 
-    def getSettingsJson(self):
+    def fetchInfo(self):
+        """从服务端获取'更新信息'"""
+        cfg = self.settingsJson
+
+        self.baseUrl = self.tryToDecodeUrl(cfg['url'])
+        index = ('/' + cfg['index']) if 'index' in cfg else ''
+
+        self.webview.invokeCallback('check_for_upgrade', self.baseUrl + index)
+
+        resp = self.httpGet(self.baseUrl + index)
+
+        upgrade = resp['upgrade'] if 'upgrade' in resp else 'self'
+        update = resp['update'] if 'upgrade' in resp else 'res'
+
+        self.upgradeUrl = self.baseUrl + '/' + upgrade
+        self.updateUrl = self.baseUrl + '/' + update
+
+        def findSource(text, default):
+            if '?' in text:
+                paramStr = text.split('?')
+                if paramStr[1] != '':
+                    for paramPair in paramStr[1].split('&'):
+                        pp = paramPair.split('=')
+                        if len(pp) == 2 and pp[0] == 'source' and pp[1] != '':
+                            return pp[1]
+                return paramStr[0]
+            return default
+
+        self.upgradeSource = findSource(upgrade, upgrade)
+        self.updateSource = findSource(update, update)
+
+        LogSys.info('Environment', 'ServerVersion: ' + resp['version'])
+        LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
+
+        return resp
+
+    def writeSignalFile(self):
+        """往exe所在目录写入信号文件，UpdaterClient程序会根据不同的信号执行不同的操作"""
+
+        hotupdateSignal = self.exe.parent('updater.hotupdate.signal')
+        errorSignal = self.exe.parent('updater.error.signal')
+
+        hotupdateSignal.delete()
+        errorSignal.delete()
+
+        if self.exitcode == 2:
+            hotupdateSignal.create()
+
+        if self.exitcode == 1:
+            errorSignal.create()
+
+    def clearSignalFile(self):
+        """清理信号文件"""
+
+        self.exe.parent('updater.hotupdate.signal').delete()
+        self.exe.parent('updater.error.signal').delete()
+
+    @property
+    def settingsJson(self):
         file = self.workDir('.minecraft/updater.settings.json')
         try:
             return json.loads(file.content)
@@ -194,7 +204,7 @@ class Entry:
             raise NoSettingsFileError(file)
 
     @staticmethod
-    def decodeUrl(url: str):
+    def tryToDecodeUrl(url: str):
         try:
             serverUrl = unquote(base64.b64decode(url, validate=True).decode('utf-8'), 'utf-8')
         except Error:
@@ -202,7 +212,7 @@ class Entry:
         return serverUrl
 
     @staticmethod
-    def httpGetRequest(url):
+    def httpGet(url):
         response = None
         try:
             response = requests.get(url, timeout=6)

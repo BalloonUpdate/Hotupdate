@@ -11,7 +11,7 @@ from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
 from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
 from src.logging.LoggingSystem import LogSys
 from src.pywebview.updater_web_view import UpdaterWebView
-from src.utils.file_comparer import FileComparer
+from src.utils.file_comparer import FileCompare
 
 
 class Upgrade:
@@ -31,10 +31,10 @@ class Upgrade:
         self.hotupdateDir.mkdirs()
 
     def compare(self, remoteFileStructure: list):
-        comparer = FileComparer(self.hotupdateDir)
+        comparer = FileCompare(self.hotupdateDir)
         comparer.compareWithList(self.hotupdateDir, remoteFileStructure)
 
-        # 跳过未知的调试信息(可能是CEFPYTHON生成的，但又没法删除
+        # 跳过未知的调试信息(是CEFPYTHON生成的，但又没法删除
         exclusions = [
             'debug.log',
             'blob_storage',
@@ -52,7 +52,7 @@ class Upgrade:
 
         return comparer
 
-    def generateBatchStatements(self, comparer: FileComparer):
+    def generateBatchStatements(self, comparer: FileCompare):
         # 升级脚本
         batchText = '''
         @echo off
@@ -99,7 +99,7 @@ class Upgrade:
         batchText += 'exit'
         return batchText
 
-    def downloadFiles(self, comparer: FileComparer):
+    def downloadFiles(self, comparer: FileCompare):
         webview: UpdaterWebView = self.e.webview
 
         # 下载新文件
@@ -129,7 +129,7 @@ class Upgrade:
             except requests.exceptions.ChunkedEncodingError as e:
                 raise UnexpectedTransmissionError(e, url)
 
-    def main(self, comparer: FileComparer):
+    def main(self, comparer: FileCompare):
         webview: UpdaterWebView = self.e.webview
 
         # 生成升级脚本

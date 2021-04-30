@@ -24,15 +24,15 @@ class UpdaterWebView:
         self.exitLock = threading.Lock()
         self.configCef()
 
-        config = entry.getSettingsJson()
+        cfg = entry.settingsJson
 
         externalAssets = entry.exe.parent('assets/index.html')
-        usingRemoteAssets = 'interface' in config
+        usingRemoteAssets = 'interface' in cfg
         usingInternalAssets = inDev or not externalAssets.exists
 
         if usingRemoteAssets:
             LogSys.info('Webview', 'Using Remote Assets')
-            url = config['interface']
+            url = cfg['interface']
         elif usingInternalAssets:
             LogSys.info('Webview', 'Using Internal Assets')
             url = 'assets/index.html'
@@ -73,8 +73,8 @@ class UpdaterWebView:
             self.onStart(window)
 
     def start(self):
-        uSettings = self.entry.getSettingsJson()
-        cef_with_httpserver = uSettings['cef_with_httpserver'] if 'cef_with_httpserver' in uSettings else True
+        cfg = self.entry.settingsJson
+        cef_with_httpserver = cfg['cef_with_httpserver'] if 'cef_with_httpserver' in cfg else True
 
         webview.start(func=self.onInit, args=self.window, gui='cef', http_server=cef_with_httpserver, debug=True)
 

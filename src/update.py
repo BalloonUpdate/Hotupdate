@@ -35,7 +35,7 @@ class Update:
 
         # 检查最新版本
         webview.invokeCallback('check_for_update', self.e.updateApi)
-        remoteFilesStructure = self.e.httpGetRequest(self.e.updateApi)
+        remoteFilesStructure = self.e.httpGet(self.e.updateApi)
 
         rootDir = workDir
         rootDir.mkdirs()
@@ -68,9 +68,9 @@ class Update:
         webview: UpdaterWebView = self.e.webview
 
         # 读取下载并发数和传输大小
-        maxParallel = self.e.getSettingsJson()['parallel'] if 'parallel' in self.e.getSettingsJson() else 1
-        chunkSize = self.e.getSettingsJson()['chunk_size'] if 'chunk_size' in self.e.getSettingsJson() else 32
-        autoChunkSize = 'chunk_size' in self.e.getSettingsJson() and self.e.getSettingsJson()['chunk_size'] <= 0
+        maxParallel = self.e.settings()['parallel'] if 'parallel' in self.e.settings() else 1
+        chunkSize = self.e.settings()['chunk_size'] if 'chunk_size' in self.e.settings() else 32
+        autoChunkSize = 'chunk_size' in self.e.settings() and self.e.settings()['chunk_size'] <= 0
 
         downloadQueue = Queue(1000000)
         threadPool = ThreadPool(maxParallel)

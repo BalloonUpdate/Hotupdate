@@ -105,7 +105,7 @@ class SimpleFileObject:
         return self.Iter(self)
 
 
-class FileComparer:
+class FileCompare:
     def __init__(self, basePath):
         super().__init__()
         self.basePath = basePath
@@ -208,3 +208,10 @@ class FileComparer:
         template2 = {'name': '', 'tree': template}
         self.findMissingFiles(current, SimpleFileObject.FromDict(template2))
         self.findUselessFiles(current, SimpleFileObject.FromDict(template2))
+
+    def hasDifferent(self):
+        hasDiff = False
+        hasDiff |= len(self.deleteFiles) > 0
+        hasDiff |= len(self.deleteFolders) > 0
+        hasDiff |= len(self.downloadFiles) > 0
+        return hasDiff

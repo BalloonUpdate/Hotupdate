@@ -21,7 +21,7 @@ if __name__ == "__main__":
         LoggingSystem.init()
 
         entry = Entry()
-        entry.main()
+        entry.mainThread()
     except SystemExit:
         pass
     except BaseException:
