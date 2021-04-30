@@ -127,6 +127,11 @@ updaterApi.on('cleanup', function() {
 
     if('hold_ui' in config && config.hold_ui)
         $('#exit-button').css('display', 'flex')
+    else if('visible_time' in config && config.visible_time >= 0) {
+        setTimeout(() => updaterApi.close(), config.visible_time);
+    } else {
+        updaterApi.close()
+    }
 })
 
 updaterApi.on('alert', function() {

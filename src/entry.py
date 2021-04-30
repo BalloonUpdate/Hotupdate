@@ -113,10 +113,6 @@ class Entry:
                 update.main(response1, settingsJson)
 
                 if 'hold_ui' in settingsJson and settingsJson['hold_ui']:
-                    self.webview.exitLock.acquire()
-                else:
-                    if 'visible_time' in settingsJson and settingsJson['visible_time'] >= 0:
-                        time.sleep(settingsJson['visible_time'] / 1000)
 
             LogSys.info('Webview', 'Webview Cleanup')
 
