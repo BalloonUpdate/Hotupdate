@@ -8,6 +8,14 @@ var vue = new Vue({
     }
 })
 
+function exit()
+{
+    if('postcalled_command' in config && config.postcalled_command != '')
+        updaterApi.execute(config.postcalled_command)
+    
+    updaterApi.close()
+}
+
 var ex_translations = {
     NotInRightPathError: '找不到../../.minecraft目录',
     NoSettingsFileError: '找不到配置文件',
@@ -128,14 +136,10 @@ updaterApi.on('cleanup', function() {
     if('hold_ui' in config && config.hold_ui)
         $('#exit-button').css('display', 'flex')
     else if('visible_time' in config && config.visible_time >= 0) {
-        setTimeout(() => updaterApi.close(), config.visible_time);
+        setTimeout(() => exit(), config.visible_time);
     } else {
-        updaterApi.close()
+        exit()
     }
-})
-
-updaterApi.on('alert', function() {
-    alert(text)
 })
 
 updaterApi.on('on_error', function(type, detail, isPyException, trackback) {
@@ -153,5 +157,7 @@ updaterApi.on('on_error', function(type, detail, isPyException, trackback) {
     if(config.error_message && confirm(config.error_message))
         if(config.error_help)
             this.execute(config.error_help)
+    
+    updaterApi.close()
 })
 
