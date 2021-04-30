@@ -51,11 +51,12 @@ class BaseWorkMode(ABC):
 
         results = []
         for reg in self.regexes:
-            plain = reg.startswith('@')
+            plain = not reg.startswith('@')
 
             if plain:
-                reg = reg[1:]
                 reg = re.escape(reg)
+            else:
+                reg = reg[1:]
 
             results += [re.match(reg, path) is not None]
 
