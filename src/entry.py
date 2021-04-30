@@ -138,8 +138,8 @@ class Entry:
                 self.webview.close()
 
     def main(self):
-        width = 600
-        height = 480
+        width = 380
+        height = 130
 
         self.printEnvInfo()
 
