@@ -99,9 +99,9 @@ class Entry:
                                         '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e),
                                         True, traceback.format_exc())
             self.exitcode = 1
-        finally:
-            if not self.webview.windowClosed:
-                self.webview.close()
+        # finally:
+        #     if not self.webview.windowClosed:
+        #         self.webview.close()
 
     def mainThread(self):
         """主线程/UI线程"""
