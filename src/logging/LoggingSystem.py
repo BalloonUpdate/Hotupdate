@@ -50,5 +50,9 @@ class LoggingSystem:
         kwargs['extra'] = {'tag': tag}
         cls.logger.exception(msg, *args, **kwargs)
 
+    @classmethod
+    def d(cls, tag, msg, *args, **kwargs):
+        cls.debug(tag, msg, *args, **kwargs)
+
 
 LogSys = LoggingSystem
