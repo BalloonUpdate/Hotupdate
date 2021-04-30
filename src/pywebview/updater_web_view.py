@@ -123,14 +123,8 @@ class UpdaterWebView:
             LogSys.error('Webview', e)
             LogSys.error('Webview', traceback.format_exc())
 
-    def alert(self, message):
-        self.invokeCallback('alert', message)
-
     def info(self, message):
         self.evaluateJs('console.log("'+message+'")')
-
-    def dialog(self, title, content):
-        self.alert(title + ': ' + content)
 
     def evaluateJs(self, statement):
         try:
