@@ -113,6 +113,9 @@ class UpdaterWebView:
     def closed(self):
         return self.windowClosed
 
+    def getWorkDirectory(self):
+        return self.entry.exe.parent.parent.parent.windowsPath
+
     def execute(self, command):
         try:
             subprocess.call(command, shell=True)
