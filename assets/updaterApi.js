@@ -62,12 +62,19 @@ class UpdaterApi
 
     execute(command) {
         if(!this.inDev)
-            pywebview.api.execute(command)
+            this.getWorkDirectory().then(wd => pywebview.api.execute('cd /D "'+wd+'" && '+command))
         else
             console.log('execute: '+command)
     }
 
-    getUrl() {
+    async getWorkDirectory() {
+        if(!this.inDev)
+            return pywebview.api.getWorkDirectory()
+        else
+            return ''
+    }
+
+    async getUrl() {
         if(!this.inDev)
             return pywebview.api.getUrl()
         else
