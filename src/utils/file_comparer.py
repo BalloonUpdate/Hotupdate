@@ -209,9 +209,11 @@ class FileCompare:
         self.findMissingFiles(current, SimpleFileObject.FromDict(template2))
         self.findUselessFiles(current, SimpleFileObject.FromDict(template2))
 
+    @property
     def hasDifferent(self):
         hasDiff = False
         hasDiff |= len(self.deleteFiles) > 0
         hasDiff |= len(self.deleteFolders) > 0
         hasDiff |= len(self.downloadFiles) > 0
+        hasDiff |= len(self.downloadFolders) > 0
         return hasDiff
