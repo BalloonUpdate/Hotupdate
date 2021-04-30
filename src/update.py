@@ -1,4 +1,3 @@
-import subprocess
 from multiprocessing.pool import ThreadPool
 from queue import Queue
 
@@ -18,67 +17,68 @@ class Update:
     def __init__(self, entry):
         self.e = entry
 
-    def main(self, response1, settingsJson):
+    def main(self, serverInfo):
         workDir = self.e.workDir
         webview: UpdaterWebView = self.e.webview
 
-        re = response1['server']
-        mode = re['mode_a']
-        regexes = re['regexes']
-        regexesMode = re['match_all_regexes']
-        command = re['command_before_exit']
-
-        LogSys.info('Config', f'ModeA: {mode}')
-        LogSys.info('Config', f'Regexes: {regexes}')
-        LogSys.info('Config', f'RegexesMode: {regexesMode}')
-        LogSys.info('Config', f'Command: {command}')
-
-        # 检查最新版本
-        webview.invokeCallback('check_for_update', self.e.updateApi)
-        remoteFilesStructure = self.e.httpGet(self.e.updateApi)
-
+        # 工作目录
         rootDir = workDir
         rootDir.mkdirs()
-
         if inDev:
             LogSys.info('Environment', 'In Dev Mode: ' + rootDir.path)
 
-        # 计算文件差异
-        workMode = self.calculateChanges(mode, rootDir, regexes, regexesMode, remoteFilesStructure)
+        rules = serverInfo['rules']
+        LogSys.info('Config', f'Rules: {rules}')
+
+        # 检查最新版本
+        webview.invokeCallback('check_for_update', self.e.updateUrl)
+        remoteFilesStructure = self.e.httpGet(self.e.updateUrl)
+
+        downloadList = {}
+        deleteList = []
+
+        for rule in rules:
+            modeA = True
+            if rule.startswith('#'):
+                rule = rule[1:]
+                modeA = False
+
+            mode = (AMode if modeA else BMode)(rootDir, [rule], False)
+            mode.scan(rootDir, remoteFilesStructure)
+
+            deleteList += mode.deleteList
+            downloadList = {**downloadList, **mode.downloadList}
 
         # 显示需要下载的新文件
-        newFiles = [[filename, length] for filename, length in workMode.downloadList.items()]
+        newFiles = [[filename, length] for filename, length in downloadList.items()]
         webview.invokeCallback('updating_new_files', newFiles)
 
         # 删除旧文件
-        for path in workMode.deleteList:
+        for path in deleteList:
             LogSys.info('Update', 'Deleted: ' + path)
             rootDir(path).delete()
 
         # 开始下载过程
-        self.download(rootDir, workMode)
-
-        # 如果没被打包就执行一下退出前命令
-        if not inDev and command != '':
-            subprocess.call(f'cd /D "{self.e.exe.parent.parent.parent.windowsPath}" && {command}', shell=True)
+        self.download(rootDir, downloadList)
 
         webview.invokeCallback('cleanup')
 
-    def download(self, rootDir, workMode):
+    def download(self, rootDir, downloadList):
         webview: UpdaterWebView = self.e.webview
 
         # 读取下载并发数和传输大小
-        maxParallel = self.e.settings()['parallel'] if 'parallel' in self.e.settings() else 1
-        chunkSize = self.e.settings()['chunk_size'] if 'chunk_size' in self.e.settings() else 32
-        autoChunkSize = 'chunk_size' in self.e.settings() and self.e.settings()['chunk_size'] <= 0
+        cfg = self.e.settingsJson
+        maxParallel = cfg['parallel'] if 'parallel' in cfg else 1
+        chunkSize = cfg['chunk_size'] if 'chunk_size' in cfg else 32
+        autoChunkSize = 'chunk_size' in cfg and cfg['chunk_size'] <= 0
 
         downloadQueue = Queue(1000000)
         threadPool = ThreadPool(maxParallel)
 
-        LogSys.info('Update', 'Count of downloadTask: ' + str(len(workMode.downloadList.items())))
+        LogSys.info('Update', 'Count of downloadTask: ' + str(len(downloadList.items())))
 
         # 开始下载
-        for path, length in workMode.downloadList.items():
+        for path, length in downloadList.items():
             _file = rootDir(path)
             _url = self.e.updateSource + '/' + path
             downloadQueue.put([_file, _url, path, length])
@@ -136,16 +136,3 @@ class Update:
 
         if ex is not None:
             raise ex
-
-    @staticmethod
-    def calculateChanges(mode, rootDir, regexes, regexesMode, structure):
-        """计算要修改的文件"""
-
-        if mode:
-            workMode = AMode(rootDir, regexes, regexesMode)
-        else:
-            workMode = BMode(rootDir, regexes, regexesMode)
-
-        workMode.scan(rootDir, structure)
-
-        return workMode

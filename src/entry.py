@@ -80,7 +80,7 @@ class Entry:
                 LogSys.info('Compare', 'There are nothing need update')
 
                 # 进入更新阶段
-                Update(self).main(serverInfo, self.settingsJson)
+                Update(self).main(serverInfo)
 
                 self.webview.exitLock.acquire()
 
@@ -166,8 +166,8 @@ class Entry:
                 return paramStr[0]
             return default
 
-        self.upgradeSource = findSource(upgrade, upgrade)
-        self.updateSource = findSource(update, update)
+        self.upgradeSource = self.baseUrl + '/' + findSource(upgrade, upgrade)
+        self.updateSource = self.baseUrl + '/' + findSource(update, update)
 
         LogSys.info('Environment', 'ServerVersion: ' + resp['version'])
         LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
