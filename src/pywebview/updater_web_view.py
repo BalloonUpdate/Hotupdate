@@ -1,18 +1,15 @@
 import json
 import logging
 import subprocess
-import sys
 import threading
-import time
 import traceback
+
 import webview
-from cefpython3.cefpython_py37 import LOGSEVERITY_INFO, LOGSEVERITY_ERROR, LOGSEVERITY_WARNING, LOGSEVERITY_DISABLE
-
+from cefpython3.cefpython_py37 import LOGSEVERITY_DISABLE
 from webview import Window
-
-from src.common import inDev
 from webview.platforms.cef import settings
 
+from src.common import inDev
 from src.logging.LoggingSystem import LogSys
 
 
