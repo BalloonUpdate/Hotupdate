@@ -88,16 +88,20 @@ class Entry:
 
         except BasicWrappedError as e:
             LogSys.error('Exception', 'BasicWrappedError Exception: ' + traceback.format_exc())
-            self.webview.invokeCallback('on_error', str(e.__class__.__name__), e.title + ': ' + e.content, False,
-                                        traceback.format_exc())
+
+            typeName = str(e.__class__.__name__)
+            detail = e.content
+
+            self.webview.invokeCallback('on_error', typeName, detail, False, traceback.format_exc())
             self.exitcode = 1
         except BaseException as e:
             LogSys.error('Exception', 'Python exception raised: ' + traceback.format_exc())
+
             className = str(e.__class__)
             className = className[className.find('\'') + 1:className.rfind('\'')]
-            self.webview.invokeCallback('on_error', className,
-                                        '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e),
-                                        True, traceback.format_exc())
+            detail = '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e)
+
+            self.webview.invokeCallback('on_error', className, detail, True, traceback.format_exc())
             self.exitcode = 1
         # finally:
         #     if not self.webview.windowClosed:

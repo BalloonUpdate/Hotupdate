@@ -7,6 +7,7 @@ from src.common import inDev
 from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
 from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
+from src.exception.UnknownWorkModeError import UnknownWorkModeError
 from src.logging.LoggingSystem import LogSys
 from src.pywebview.updater_web_view import UpdaterWebView
 from src.work_mode.mode_a import AMode
@@ -27,8 +28,10 @@ class Update:
         if inDev:
             LogSys.info('Environment', 'In Dev Mode: ' + rootDir.path)
 
-        rules = serverInfo['rules']
-        LogSys.info('Config', f'Rules: {rules}')
+        LogSys.info('Config', f'ServerConfig: {serverInfo}')
+
+        mode = serverInfo['mode']
+        paths = serverInfo['paths']
 
         # 检查最新版本
         webview.invokeCallback('check_for_update', self.e.updateUrl)
@@ -37,17 +40,19 @@ class Update:
         downloadList = {}
         deleteList = []
 
-        for rule in rules:
-            modeA = True
-            if rule.startswith('#'):
-                rule = rule[1:]
-                modeA = False
+        workModes = {
+            'common': AMode,
+            'exist': BMode
+        }
 
-            mode = (AMode if modeA else BMode)(rootDir, [rule], False)
-            mode.scan(rootDir, remoteFilesStructure)
+        if mode not in workModes:
+            raise UnknownWorkModeError(mode)
 
-            deleteList += mode.deleteList
-            downloadList = {**downloadList, **mode.downloadList}
+        workmode = workModes[mode](rootDir, paths, False)
+        workmode.scan(rootDir, remoteFilesStructure)
+
+        deleteList += workmode.deleteList
+        downloadList = {**downloadList, **workmode.downloadList}
 
         # 显示需要下载的新文件
         newFiles = [[filename, length] for filename, length in downloadList.items()]

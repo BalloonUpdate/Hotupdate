@@ -23,7 +23,8 @@ var ex_translations = {
     UnableToDecodeError: '服务器返回了无法解码的数据',
     UnexpectedTransmissionError: '传输中断',
     UnexpectedHttpCodeError: '不正确的HTTP状态码',
-    're.error': '正则表达式错误'
+    're.error': '正则表达式错误',
+    UnknownWorkModeError: '未知的工作模式'
 }
 
 var config = null
@@ -146,7 +147,7 @@ updaterApi.on('on_error', function(type, detail, isPyException, trackback) {
     if(type in ex_translations)
         type += '('+ex_translations[type]+')'
 
-    alert('出现错误: '+type+'\n\n'+detail)
+    alert(type+'\n\n'+detail)
     
     if(!('indev' in config && config['indev']) || true)
     {
