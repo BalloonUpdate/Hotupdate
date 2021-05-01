@@ -153,11 +153,8 @@ class Entry:
 
         resp = self.httpGet(self.baseUrl + index)
 
-        upgrade = resp['upgrade'] if 'upgrade' in resp else 'self.json'
-        update = resp['update'] if 'upgrade' in resp else 'res.json'
-
-        self.upgradeUrl = self.baseUrl + '/' + upgrade
-        self.updateUrl = self.baseUrl + '/' + update
+        upgrade = resp['upgrade'] if 'upgrade' in resp else 'self'
+        update = resp['update'] if 'upgrade' in resp else 'res'
 
         def findSource(text, default):
             if '?' in text:
@@ -170,8 +167,16 @@ class Entry:
                 return paramStr[0]
             return default
 
+        self.upgradeUrl = self.baseUrl + '/' + (upgrade + '.json' if '?' not in upgrade else upgrade)
+        self.updateUrl = self.baseUrl + '/' + (update + '.json' if '?' not in update else update)
         self.upgradeSource = self.baseUrl + '/' + findSource(upgrade, upgrade)
         self.updateSource = self.baseUrl + '/' + findSource(update, update)
+
+        LogSys.info('ServerAPI', 'response: ' + str(resp))
+        LogSys.info('ServerAPI', 'upgradeUrl: '+self.upgradeUrl)
+        LogSys.info('ServerAPI', 'updateUrl: ' + self.updateUrl)
+        LogSys.info('ServerAPI', 'upgradeSource: ' + self.upgradeSource)
+        LogSys.info('ServerAPI', 'updateSource: ' + self.updateSource)
 
         LogSys.info('Environment', 'ServerVersion: ' + resp['version'])
         LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
