@@ -149,8 +149,8 @@ class Entry:
 
         resp = self.httpGet(self.baseUrl + index)
 
-        upgrade = resp['upgrade'] if 'upgrade' in resp else 'self'
-        update = resp['update'] if 'upgrade' in resp else 'res'
+        upgrade = resp['upgrade'] if 'upgrade' in resp else 'self.json'
+        update = resp['update'] if 'upgrade' in resp else 'res.json'
 
         self.upgradeUrl = self.baseUrl + '/' + upgrade
         self.updateUrl = self.baseUrl + '/' + update
