@@ -144,11 +144,13 @@ class Upgrade:
 
         webview.invokeCallback('upgrading_before_installing')
 
-        time.sleep(1)
-
         # 开始升级
         cmd = f'cd /D "{self.tempScript.parent.windowsPath}" && start {self.tempScript.name}'
         subprocess.call(cmd, shell=True)
 
         # 返回2
         self.e.exitcode = 2
+
+        # 关闭CEF窗口
+        if not self.e.webview.windowClosed:
+            self.e.webview.close()
