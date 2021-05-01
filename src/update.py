@@ -28,7 +28,7 @@ class Update:
         if inDev:
             LogSys.info('Environment', 'In Dev Mode: ' + rootDir.path)
 
-        LogSys.info('Config', f'ServerConfig: {serverInfo}')
+        LogSys.info('Update', f'ServerConfig: {serverInfo}')
 
         mode = serverInfo['mode']
         paths = serverInfo['paths']
@@ -49,6 +49,9 @@ class Update:
             raise UnknownWorkModeError(mode)
 
         workmode = workModes[mode](rootDir, paths, False)
+
+        LogSys.info('Update', 'WorkMode: ' + str(workmode))
+
         workmode.scan(rootDir, remoteFilesStructure)
 
         deleteList += workmode.deleteList
