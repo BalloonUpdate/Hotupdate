@@ -95,9 +95,11 @@ class Update:
             while not downloadQueue.empty():
                 task = downloadQueue.get(timeout=10)
                 file = task[0]
-                url = task[1]
+                url = task[1].replace('+', '%2B')
                 path = task[2]
                 length = task[3]
+
+                LogSys.info('Debug', 'url: '+url)
 
                 LogSys.info('Update', 'Downloading: ' + path + ' from ' + url)
                 webview.invokeCallback('updating_downloading', path, 0, 0, length)
