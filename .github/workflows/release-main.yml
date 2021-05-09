@@ -39,6 +39,7 @@ jobs:
           Copy-Item ci\fix\hook-cefpython3.py C:\hostedtoolcache\windows\Python\3.7.9\x64\Lib\site-packages\PyInstaller\hooks
           python ci\generate_version_file.py
           C:\hostedtoolcache\windows\Python\3.7.9\x64\Scripts\pyinstaller --noconfirm --version-file version-file.txt --add-data="icon.ico;." --add-binary="assets;assets" --add-binary="v4.0.30319;dotnet" -i icon.ico -F -w -n UpdaterHotupdatePackage main.py
+          Copy-Item updater.settings.exam.json dist\
           dir
 
       - name: Print Hashes
