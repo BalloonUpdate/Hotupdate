@@ -1,5 +1,5 @@
 PyInstaller==4.2
 pywebview==3.4
-cefpython3==66.0
+cefpython3==66.1
 requests==2.24.0
 psutil==5.8.0
