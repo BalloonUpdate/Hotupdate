@@ -141,6 +141,7 @@ class Entry:
         LogSys.info('Environment', 'S:Processors: ' + str(psutil.cpu_count()))
         LogSys.info('Environment', 'S:Operating System: ' + platform.platform())
         LogSys.info('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
+        LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
 
     def fetchInfo(self):
         """从服务端获取'更新信息'"""
@@ -179,7 +180,6 @@ class Entry:
         LogSys.info('ServerAPI', 'updateSource: ' + self.updateSource)
 
         LogSys.info('Environment', 'ServerVersion: ' + resp['version'])
-        LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
 
         return resp
 
