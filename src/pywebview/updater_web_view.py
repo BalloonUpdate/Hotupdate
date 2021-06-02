@@ -73,7 +73,13 @@ class UpdaterWebView:
         cfg = self.entry.settingsJson
         cef_with_httpserver = cfg['cef_with_httpserver'] if 'cef_with_httpserver' in cfg else True
 
-        webview.start(func=self.onInit, args=self.window, gui='cef', http_server=cef_with_httpserver, debug=True)
+        try:
+            webview.start(func=self.onInit, args=self.window, gui='cef', http_server=cef_with_httpserver, debug=True)
+        except UnicodeDecodeError as e:
+            if 'cef_with_httpserver' not in cfg:
+                webview.start(func=self.onInit, args=self.window, gui='cef', http_server=False, debug=True)
+            else:
+                raise e
 
     def startUpdate(self):
         LogSys.info('WebView', 'startUpdate ')
