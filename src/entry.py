@@ -11,7 +11,6 @@ from urllib.parse import unquote
 import psutil
 import requests
 
-from ci.version import productVersion
 from src.common import inDev, devDirectory
 from src.exception.BasicWrappedError import BasicWrappedError
 from src.exception.FailedToConnectError import FailedToConnectError
@@ -141,7 +140,12 @@ class Entry:
         LogSys.info('Environment', 'S:Processors: ' + str(psutil.cpu_count()))
         LogSys.info('Environment', 'S:Operating System: ' + platform.platform())
         LogSys.info('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
-        LogSys.info('Environment', 'HoutupdateVersion: ' + productVersion)
+
+        if not inDev:
+            temp = File(getattr(sys, '_MEIPASS', ''))
+            buildInfo = json.loads(temp('build-info.json').content)
+            
+            LogSys.info('Environment', 'HoutupdateVersion: ' + buildInfo['version'])
 
     def fetchInfo(self):
         """从服务端获取'更新信息'"""
