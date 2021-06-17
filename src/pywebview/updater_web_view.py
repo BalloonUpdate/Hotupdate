@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 import threading
+import time
 import traceback
 
 import webview
@@ -9,12 +10,13 @@ from cefpython3.cefpython_py37 import LOGSEVERITY_DISABLE
 from webview import Window
 from webview.platforms.cef import settings
 
+from src.utils.file import File
 from src.common import inDev
 from src.logging.LoggingSystem import LogSys
 
 
 class UpdaterWebView:
-    def __init__(self, entry, onStart=None, width=800, height=600):
+    def __init__(self, entry, onStart=None, width=800, height=600, icon=None):
         self.entry = entry
         self.javascriptLock = threading.Lock()
         self.loggingLock = threading.Lock()
@@ -23,25 +25,26 @@ class UpdaterWebView:
 
         cfg = entry.settingsJson
 
-        externalAssets = entry.exe.parent('assets/index.html')
-        usingRemoteAssets = 'interface' in cfg
-        usingInternalAssets = inDev or not externalAssets.exists
+        self.externalAssets = entry.exe.parent('assets/index.html')
+        self.usingRemoteAssets = 'interface' in cfg
+        self.usingInternalAssets = inDev or not self.externalAssets.exists
 
-        if usingRemoteAssets:
+        if self.usingRemoteAssets:
             LogSys.info('Webview', 'Using Remote Assets')
             url = cfg['interface']
-        elif usingInternalAssets:
+        elif self.usingInternalAssets:
             LogSys.info('Webview', 'Using Internal Assets')
             url = 'assets/index.html'
         else:
             LogSys.info('Webview', 'Using External Assets')
-            url = externalAssets.path
+            url = self.externalAssets.path
 
         LogSys.info('Webview', 'Load Assets: ' + url)
 
         self.windowClosed = False
         self.window: Window = webview.create_window('', url=url, js_api=self, width=width, height=height,
                                                     text_select=True)
+
         self.onStart = onStart
 
         class Monitor(logging.StreamHandler):
@@ -69,6 +72,8 @@ class UpdaterWebView:
         if self.onStart is not None:
             self.onStart(window)
 
+        self.setIcon()
+
     def start(self):
         cfg = self.entry.settingsJson
         cef_with_httpserver = cfg['cef_with_httpserver'] if 'cef_with_httpserver' in cfg else True
@@ -82,9 +87,13 @@ class UpdaterWebView:
                 raise e
 
     def startUpdate(self):
-        LogSys.info('WebView', 'startUpdate ')
-        if self.entry.updateLock.locked:
+        def s():
+            LogSys.info('WebView', 'startUpdate')
+            while not self.entry.updateLock.locked():
+                time.sleep(0.1)
             self.entry.updateLock.release()
+
+        threading.Thread(target=s, daemon=True).start()
 
     def getUrl(self):
         return self.window.get_current_url()
@@ -151,6 +160,32 @@ class UpdaterWebView:
         with self.loggingLock:
             LogSys.debug('Webview', 'Statement: ' + statement)
         self.evaluateJs(statement)
+
+    def setIcon(self):
+        if self.usingInternalAssets:
+            LogSys.info('Webview', 'Using Internal Icon')
+            ico = 'assets/icon.ico'
+        else:
+            LogSys.info('Webview', 'Using External Icon')
+            ico = self.entry.exe.parent('assets/icon.ico')
+
+        if not File(ico).exists:
+            LogSys.warning('Webview', 'Icon not found: '+ico)
+            return
+
+        import clr
+        from System.Drawing import Icon
+
+        instances = self.window.gui.BrowserView.instances
+
+        def work():
+            while 'master' not in instances:
+                time.sleep(0.1)
+            winform = instances['master']
+            winform.Icon = Icon(ico)
+            print(winform.Icon)
+
+        threading.Thread(target=work, daemon=True).start()
 
     # def setSize(self, width, height):
     #     self.window.resize(width, height)
