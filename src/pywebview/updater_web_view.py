@@ -165,6 +165,9 @@ class UpdaterWebView:
         if self.usingInternalAssets:
             LogSys.info('Webview', 'Using Internal Icon')
             ico = 'assets/icon.ico'
+            if not inDev:
+                temp = File(getattr(sys, '_MEIPASS', ''))
+                ico = temp(ico).path
         else:
             LogSys.info('Webview', 'Using External Icon')
             ico = self.entry.exe.parent('assets/icon.ico')
