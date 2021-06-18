@@ -90,7 +90,7 @@ class UpdaterApi
 
     start()  {
         if(!this.inDev)
-            setTimeout(() => pywebview.api.startUpdate(), 50);
+            pywebview.api.startUpdate()
         else
             console.log('startUpdate!')
     }
