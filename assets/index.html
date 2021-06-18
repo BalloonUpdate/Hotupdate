@@ -64,7 +64,7 @@
 		}
 		.message pre {
 			margin: 0;
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			font-family: 'Microsoft YaHei', "Open Sans", Arial, sans-serif
 		}
 
 		#exit-button {
@@ -98,16 +98,16 @@
 
 		<div class="progress-bar" style="margin-bottom: 16px;">
 			<div class="progress-bar-fill"
-				v-bind:style="'width: '+currentProgress/100.0+'%'"
+				v-bind:style="'width: '+progress1/100.0+'%'"
 			></div>
-			<div class="message"><pre>{{currentProgressText}}</pre></div>
+			<div class="message"><pre>{{text1}}</pre></div>
 		</div>
 
 		<div class="progress-bar">
 			<div class="progress-bar-fill"
-				v-bind:style="'width: '+totalProgress/100.0+'%'"
+				v-bind:style="'width: '+progress2/100.0+'%'"
 			></div>
-			<div class="message"><pre>{{totalProgressText}}</pre></div>
+			<div class="message"><pre>{{text2}}</pre></div>
 		</div>
 
 	</div>

@@ -1,12 +1,17 @@
 var vue = new Vue({
     el: '#vue-container',
     data: {
-        currentProgressText: '',
-        currentProgress: 0,
-        totalProgressText: '',
-        totalProgress: 0,
+        text1: '',
+        progress1: 0,
+        text2: '',
+        progress2: 0,
     }
 })
+
+function dec(num)
+{
+    return parseInt(num * 10)/10
+}
 
 function exit()
 {
@@ -34,26 +39,19 @@ var totalFileCount = 0
 var downloadFileCount = 0
 
 updaterApi.on('init', function(_config) {
-    console.log(this)
-    this.setTitle('准备文件更新')
-    vue.progressText = '正在连接服务器'
     config = _config
-    console.log(_config)
-    
     this.start()
+
+    this.setTitle('文件更新')
+    vue.text2 = '正在连接服务器..'
 })
 
 updaterApi.on('calculate_differences_for_upgrade', function() {
-    this.setTitle('检查文件')
-    vue.progressText = '检查文件..'
-})
-
-updaterApi.on('whether_upgrade', function(isupgrade) {
-    this.setTitle('正在更新文件')
-    vue.progressText = '正在更新文件'
+    vue.text2 = '检查文件..'
 })
 
 updaterApi.on('upgrading_new_files', function(paths) {
+    totalFileCount = paths.length
     for(let p of paths) {
         let path = p[0]
         let len = p[1]
@@ -65,39 +63,39 @@ updaterApi.on('upgrading_new_files', function(paths) {
 updaterApi.on('upgrading_downloading', function(file, recv, bytes, total) {
     receivedBytes += recv
 
-    vue.currentProgress = parseInt(bytes/total*10000)
-    vue.currentProgressText = file
+    // 下载完成时
+    if(bytes==total)
+        downloadFileCount += 1
 
-    let totalProgress = parseInt(receivedBytes/totalBytes*10000)
-    vue.totalProgress = totalProgress
-    vue.totalProgressText = '正在下载新文件 '+(totalProgress/100)+'%'
+    let totalProgress = dec(receivedBytes/totalBytes*10000)
+    let currentProgress = dec(bytes/total*10000)
+    let totalProgressIn100 = dec(totalProgress/100)
+    let currentProgressIn100 = dec(currentProgress/100)
 
-    this.setTitle('正在下载新文件 '+(totalProgress/100)+'%')
+    vue.progress1 = currentProgress
+    vue.progress2 = totalProgress
+    vue.text1 = file
+    vue.text2 = '下载新文件 '+totalProgressIn100+'%  -  '+(downloadFileCount+1)+'/'+totalFileCount
+    this.setTitle('下载新文件 '+totalProgressIn100+'%')
 })
 
 updaterApi.on('upgrading_before_installing', function() {
-    this.setTitle('开始安装更新包')
-    vue.totalProgressText = '开始安装更新包'
+    vue.text2 = '等待重新启动..'
 })
 
 //    -------------------------------------
 
 updaterApi.on('calculate_differences_for_update', function() {
-    this.setTitle('检查文件更新中')
-    vue.totalProgressText = '校验文件..'
+    vue.text2 = '校验文件...'
 })
-
 
 updaterApi.on('updating_new_files', function(paths) {
     totalFileCount = paths.length
-
     for(let p of paths) {
         let path = p[0]
         let len = p[1]
         totalBytes += len
     }
-
-    this.setTitle('下载新文件')
 })
 
 var lastUpdate = 0
@@ -105,34 +103,37 @@ var lastFile = ''
 updaterApi.on('updating_downloading', function(file, recv, bytes, total) {
     receivedBytes += recv
 
+    // 下载完成时
+    if(bytes==total)
+        downloadFileCount += 1
+
+    let totalProgress = dec(receivedBytes/totalBytes*10000)
+    let currentProgress = dec(bytes/total*10000)
+    let totalProgressIn100 = dec(totalProgress/100)
+    let currentProgressIn100 = dec(currentProgress/100)
+
     let filename = file.lastIndexOf('/')!=-1? file.substring(file.lastIndexOf('/')+1):file
     let ts = new Date().getTime()
-
-    if(ts-lastUpdate > 1000)
+    if(ts-lastUpdate > 800)
     {
-        vue.currentProgress = parseInt(bytes/total*10000)
-        vue.currentProgressText = filename
+        vue.progress1 = currentProgress
+        vue.text1 = filename
         lastUpdate = ts
         lastFile = filename
     } else {
         if(lastFile==filename)
-            vue.currentProgress = parseInt(bytes/total*10000)
+            vue.progress1 = currentProgress
     }
 
-    let totalProgress = parseInt(receivedBytes/totalBytes*10000)
-    vue.totalProgress = totalProgress
-    vue.totalProgressText = (totalProgress/100)+'% - '+(downloadFileCount+1)+'/'+totalFileCount
+    vue.progress2 = totalProgress
+    vue.text2 = totalProgressIn100+'%  -  '+(downloadFileCount+1)+'/'+totalFileCount
 
-    this.setTitle('下载新文件 '+parseInt((totalProgress/10)+'')/10+'%')
-
-    // 下载完成时
-    if(bytes==total)
-        downloadFileCount += 1
+    this.setTitle('下载新文件 '+totalProgressIn100+'%')
 })
 
 updaterApi.on('cleanup', function() {
-    this.setTitle('正在结束')
-    vue.totalProgressText = '正在结束'
+    this.setTitle('文件更新')
+    vue.text2 = totalFileCount>0? '更新完毕!':'所有文件已是最新!'
 
     if('hold_ui' in config && config.hold_ui)
         $('#exit-button').css('display', 'flex')
