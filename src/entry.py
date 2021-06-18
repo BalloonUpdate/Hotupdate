@@ -45,7 +45,7 @@ class Entry:
     def workThread(self):
         """工作线程"""
         try:
-            self.webview.invokeCallback('init', {**self.settingsJson, 'indev': inDev})
+            self.webview.invokeCallback('init', {**self.settingsJson, 'indev': inDev, 'argv': sys.argv})
 
             # 等待开始更新的信号
             self.updateLock.acquire()
@@ -127,7 +127,7 @@ class Entry:
 
     def initializeWorkDirectory(self):
         if not inDev:
-            self.workDir = File(sys.argv[1]) if len(sys.argv) > 1 else self.exe.parent.parent.parent
+            self.workDir = self.exe.parent.parent.parent
             if '.minecraft' not in self.workDir:
                 raise NotInRightPathError(self.workDir.path)
         else:
