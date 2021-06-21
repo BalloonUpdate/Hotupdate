@@ -8,3 +8,4 @@ class UnableToDecodeError(BasicWrappedError):
         self.content = f'The Server returned a undecodable message\nURL: {url}\nHTTP Code: {httpStatus}\n--------Raw Data Returned--------\n{data[:300]}'
         if len(data) > 300:
             self.content += '\n(and more)...'
+        self.trans = '更新服务器返回了无法解码的数据'

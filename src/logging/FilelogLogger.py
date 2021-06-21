@@ -1,11 +1,11 @@
 import logging
 import sys
 
-from src.logging.UpdaterFormatter import UpdaterFormatter
+from src.logging.FilelogFormatter import FilelogFormatter
 from src.utils.file import File
 
 
-class UpdaterLogger(logging.Logger):
+class FilelogLogger(logging.Logger):
     def __init__(self, file: File):
         super().__init__(__name__)
 
@@ -15,15 +15,10 @@ class UpdaterLogger(logging.Logger):
         self.fileHandler.setLevel(logging.DEBUG)
         self.fileHandler.setFormatter(formatter)
 
-        self.streamHandler = logging.StreamHandler(sys.stdout)
-        self.streamHandler.setLevel(logging.INFO)
-        self.streamHandler.setFormatter(formatter)
-
         self.addHandler(self.fileHandler)
-        self.addHandler(self.streamHandler)
 
     @staticmethod
     def getFormatter():
         lineFormat = '[ %(asctime)s {levelname:5s} ] [ {tag:s} ]: %(message)s'
         dateFormat = '%Y-%m-%d %H:%M:%S.$s'
-        return UpdaterFormatter(fmt=lineFormat, datefmt=dateFormat)
+        return FilelogFormatter(fmt=lineFormat, datefmt=dateFormat)

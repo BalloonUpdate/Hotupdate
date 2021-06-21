@@ -1,8 +1,10 @@
 import base64
+import ctypes
 import json
 import platform
 import sys
 import threading
+import time
 import traceback
 from binascii import Error
 from json import JSONDecodeError
@@ -18,7 +20,6 @@ from src.exception.NoSettingsFileError import NoSettingsFileError
 from src.exception.NotInRightPathError import NotInRightPathError
 from src.exception.UnableToDecodeError import UnableToDecodeError
 from src.logging.LoggingSystem import LogSys
-from src.pywebview.updater_web_view import UpdaterWebView
 from src.update import Update
 from src.upgrade import Upgrade
 from src.utils.file import File
@@ -35,97 +36,7 @@ class Entry:
         self.updateSource = ''
         self.exitcode = 0
 
-        self.updateLock = threading.Lock()
-
-        self.webview: UpdaterWebView = None
-
-        self.initializeWorkDirectory()
-        self.clearSignalFile()
-
-    def workThread(self):
-        """工作线程"""
-        try:
-            self.webview.invokeCallback('init', {**self.settingsJson, 'indev': inDev, 'argv': sys.argv})
-
-            # 等待开始更新的信号
-            self.updateLock.acquire()
-            self.updateLock.acquire()
-
-            serverInfo = self.fetchInfo()
-
-            # 检查是否有新版本需要升级
-            remoteFilesStructure = self.httpGet(self.upgradeUrl)
-            upgrade = Upgrade(self)
-            compare = upgrade.compare(remoteFilesStructure)
-
-            # 如果有需要删除/下载的文件，代表程序需要更新
-            if compare.hasDifferent:
-                LogSys.info('Compare', 'Old Files: ' + str(compare.deleteFiles))
-                LogSys.info('Compare', 'Old Folders: ' + str(compare.deleteFolders))
-                LogSys.info('Compare', 'New Files: ' + str(compare.downloadFiles))
-                LogSys.info('Compare', 'New Folders: ' + str(compare.downloadFolders))
-
-                # 触发回调函数
-                # filename, length, hash
-                newFiles = [[filename, length[0], length[1]] for filename, length in compare.downloadFiles.items()]
-                newFiles += [[file, -1] for file in compare.downloadFolders]
-                self.webview.invokeCallback('whether_upgrade', True)
-                self.webview.invokeCallback('upgrading_new_files', newFiles)
-
-                # 进入升级阶段
-                upgrade.main(compare)
-            else:
-                self.webview.invokeCallback('whether_upgrade', False)
-                LogSys.info('Compare', 'There are nothing need update')
-
-                # 进入更新阶段
-                Update(self).main(serverInfo)
-
-                self.webview.exitLock.acquire()
-
-            LogSys.info('Webview', 'Webview Cleanup')
-
-        except BasicWrappedError as e:
-            LogSys.error('Exception', 'BasicWrappedError Exception: ' + traceback.format_exc())
-
-            typeName = str(e.__class__.__name__)
-            detail = e.content
-
-            self.webview.invokeCallback('on_error', typeName, detail, False, traceback.format_exc())
-            self.exitcode = 1
-        except BaseException as e:
-            LogSys.error('Exception', 'Python exception raised: ' + traceback.format_exc())
-
-            className = str(e.__class__)
-            className = className[className.find('\'') + 1:className.rfind('\'')]
-            detail = '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e)
-
-            self.webview.invokeCallback('on_error', className, detail, True, traceback.format_exc())
-            self.exitcode = 1
-        # finally:
-        #     if not self.webview.windowClosed:
-        #         self.webview.close()
-
-    def mainThread(self):
-        """主线程/UI线程"""
-        cfg = self.settingsJson
-        width = cfg['width'] if 'width' in cfg else 380
-        height = cfg['height'] if 'height' in cfg else 130
-
-        self.printEnvInfo()
-
-        workThread = threading.Thread(target=self.workThread, daemon=True)
-
-        # 启动CEF窗口
-        self.webview = UpdaterWebView(self, onStart=lambda window: workThread.start(), width=width, height=height)
-        self.webview.start()
-
-        LogSys.info('Webview', 'Webview Exited with exit code ' + str(self.exitcode))
-
-        self.writeSignalFile()
-        sys.exit(self.exitcode)
-
-    def initializeWorkDirectory(self):
+        # 初始化工作目录
         if not inDev:
             self.workDir = self.exe.parent.parent.parent
             if '.minecraft' not in self.workDir:
@@ -134,18 +45,91 @@ class Entry:
             self.workDir = File(devDirectory)
             self.workDir.mkdirs()
 
+        # 清理信号文件
+        self.exe.parent('updater.hotupdate.signal').delete()
+        self.exe.parent('updater.error.signal').delete()
+
+    def mainThread(self):
+        """主线程/UI线程"""
+        self.printEnvInfo()
+
+        try:
+            serverInfo = self.fetchInfo()
+
+            try:
+                ctypes.windll.kernel32.SetConsoleTitleW("Minecraft文件更新")
+            except:
+                pass
+
+            # 检查是否有新版本需要升级
+            LogSys.is_('正在检查文件更新...')
+            remoteFilesStructure = self.httpGet(self.upgradeUrl)
+            # upgrade = Upgrade(self)
+            # compare = upgrade.compare(remoteFilesStructure)
+
+            # 如果有需要删除/下载的文件，代表程序需要更新
+            # if compare.hasDifferent:
+            if False:
+                pass
+                # LogSys.if_('Compare', 'Old Files: ' + str(compare.deleteFiles))
+                # LogSys.if_('Compare', 'Old Folders: ' + str(compare.deleteFolders))
+                # LogSys.if_('Compare', 'New Files: ' + str(compare.downloadFiles))
+                # LogSys.if_('Compare', 'New Folders: ' + str(compare.downloadFolders))
+
+                # 进入升级阶段
+                # upgrade.main(compare)
+            else:
+                LogSys.if_('Compare', 'No upgrade forever')
+
+                # 进入更新阶段
+                LogSys.is_('正在检查文件更新...')
+                wkmd = Update(self).main(serverInfo)
+                if len(wkmd.downloadList) > 0:
+                    print('\n')
+                    LogSys.is_('MainThread', '所有文件已更新完毕！请按任意键或者关闭本程序。')
+                    input()
+                else:
+                    LogSys.is_('MainThread', '没有文件需要更新。')
+                    time.sleep(2)
+
+        except BasicWrappedError as e:
+            url = self.settingsJson['url']
+
+            LogSys.ef('Exception', 'BasicWrappedError Exception: ' + traceback.format_exc())
+            LogSys.es('\n'+e.content.replace(url, 'https://***')+'\n')
+            LogSys.es(e.trans)
+
+            self.exitcode = 1
+        except BaseException as e:
+            LogSys.error('Exception', 'Python exception raised: ' + traceback.format_exc())
+
+            # className = str(e.__class__)
+            # className = className[className.find('\'') + 1:className.rfind('\'')]
+            # detail = '----------Python exception raised----------\n' + str(type(e)) + '\n' + str(e)
+
+            self.exitcode = 1
+
+        if self.exitcode == 1:
+            input("任意键继续...")
+
+        LogSys.info('MainThread', '退出 ' + str(self.exitcode))
+
+        self.writeSignalFile()
+        sys.exit(self.exitcode)
+
     @staticmethod
     def printEnvInfo():
-        LogSys.info('Environment', 'S:Architecture: ' + platform.machine())
-        LogSys.info('Environment', 'S:Processors: ' + str(psutil.cpu_count()))
-        LogSys.info('Environment', 'S:Operating System: ' + platform.platform())
-        LogSys.info('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
+        LogSys.if_('Environment', 'S:Architecture: ' + platform.machine())
+        LogSys.if_('Environment', 'S:Processors: ' + str(psutil.cpu_count()))
+        LogSys.if_('Environment', 'S:Operating System: ' + platform.platform())
+        LogSys.if_('Environment', 'S:Memory: ' + str(psutil.virtual_memory()))
 
         if not inDev:
             temp = File(getattr(sys, '_MEIPASS', ''))
             buildInfo = json.loads(temp('build-info.json').content)
-            
-            LogSys.info('Environment', 'HoutupdateVersion: ' + buildInfo['version'])
+
+            LogSys.if_('Environment', 'HoutupdateVersion: ' + buildInfo['version'])
+            LogSys.is_('Environment', 'Minecraft更新小助手，程序版本: ' + buildInfo['version'])
 
     def fetchInfo(self):
         """从服务端获取'更新信息'"""
@@ -153,8 +137,6 @@ class Entry:
 
         self.baseUrl = self.tryToDecodeUrl(cfg['url'])
         index = ('/' + cfg['index']) if 'index' in cfg else ''
-
-        self.webview.invokeCallback('check_for_upgrade', self.baseUrl + index)
 
         resp = self.httpGet(self.baseUrl + index)
 
@@ -177,13 +159,13 @@ class Entry:
         self.upgradeSource = self.baseUrl + '/' + findSource(upgrade, upgrade)
         self.updateSource = self.baseUrl + '/' + findSource(update, update)
 
-        LogSys.info('ServerAPI', 'response: ' + str(resp))
-        LogSys.info('ServerAPI', 'upgradeUrl: '+self.upgradeUrl)
-        LogSys.info('ServerAPI', 'updateUrl: ' + self.updateUrl)
-        LogSys.info('ServerAPI', 'upgradeSource: ' + self.upgradeSource)
-        LogSys.info('ServerAPI', 'updateSource: ' + self.updateSource)
+        LogSys.if_('ServerAPI', 'response: ' + str(resp))
+        LogSys.if_('ServerAPI', 'upgradeUrl: '+self.upgradeUrl)
+        LogSys.if_('ServerAPI', 'updateUrl: ' + self.updateUrl)
+        LogSys.if_('ServerAPI', 'upgradeSource: ' + self.upgradeSource)
+        LogSys.if_('ServerAPI', 'updateSource: ' + self.updateSource)
 
-        LogSys.info('Environment', 'ServerVersion: ' + resp['version'])
+        LogSys.if_('Environment', 'ServerVersion: ' + resp['version'])
 
         return resp
 
@@ -201,12 +183,6 @@ class Entry:
 
         if self.exitcode == 1:
             errorSignal.create()
-
-    def clearSignalFile(self):
-        """清理信号文件"""
-
-        self.exe.parent('updater.hotupdate.signal').delete()
-        self.exe.parent('updater.error.signal').delete()
 
     @property
     def settingsJson(self):

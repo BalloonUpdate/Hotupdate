@@ -1,16 +1,17 @@
+import ctypes
 import subprocess
 import sys
 import tempfile
 import time
 
 import requests
+from tqdm import tqdm
 
 from src.common import inDev
 from src.exception.FailedToConnectError import FailedToConnectError
 from src.exception.UnexpectedHttpCodeError import UnexpectedHttpCodeError
 from src.exception.UnexpectedTransmissionError import UnexpectedTransmissionError
 from src.logging.LoggingSystem import LogSys
-from src.pywebview.updater_web_view import UpdaterWebView
 from src.utils.file_comparer import FileCompare
 
 
@@ -48,7 +49,7 @@ class Upgrade:
             comparer.deleteFiles = [f for f in comparer.deleteFiles if not f.startswith(exPath)]
             comparer.deleteFolders = [f for f in comparer.deleteFolders if not f.startswith(exPath)]
 
-            LogSys.info('Upgrade', 'Exclude: ' + exPath)
+            LogSys.if_('Upgrade', 'Exclude: ' + exPath)
 
         return comparer
 
@@ -100,38 +101,50 @@ class Upgrade:
         return batchText
 
     def downloadFiles(self, comparer: FileCompare):
-        webview: UpdaterWebView = self.e.webview
+        # 计算总下载量
+        totalKBytes = 0
+        downloadedBytes = 0
+        for d in comparer.downloadFiles.values():
+            totalKBytes += d[0]
 
-        # 下载新文件
-        for path, length in comparer.downloadFiles.items():
-            url = self.e.upgradeSource + '/' + path
-            file = self.tempDir(path)
+        LogSys.is_('Upgrade', '正在下载新的文件，请不要关掉本程序。')
 
-            # 开始下载
-            LogSys.info('Upgrade', 'Downloading: ' + file.name)
-            webview.invokeCallback('upgrading_downloading', path, 0, 0, length[0])
+        with tqdm(total=int(totalKBytes / 1024), dynamic_ncols=True, unit='kb', desc='',
+                  bar_format="{desc}{percentage:3.1f}% {bar} {n_fmt}/{total_fmt}Kb {rate_fmt}") as pbar:
+            downloadedCount = 0
 
-            try:
-                r = requests.get(url, stream=True, timeout=5)
-                if r.status_code != 200:
-                    raise UnexpectedHttpCodeError(url, r.status_code, r.text)
+            # 下载新文件
+            for path, length in comparer.downloadFiles.items():
+                url = self.e.upgradeSource + '/' + path
+                file = self.tempDir(path)
 
-                received = 0
-                file.makeParentDirs()
-                with open(file.path, 'xb+') as f:
-                    for chunk in r.iter_content(chunk_size=1024 * 64):
-                        f.write(chunk)
-                        received += len(chunk)
-                        webview.invokeCallback('upgrading_downloading', path, len(chunk), received, length[0])
+                # 开始下载
+                LogSys.if_('Upgrade', 'Downloading: ' + file.name)
+                LogSys.is_('Upgrade', '下载新版本: ' + file.name)
 
-            except requests.exceptions.ConnectionError as e:
-                raise FailedToConnectError(e, url)
-            except requests.exceptions.ChunkedEncodingError as e:
-                raise UnexpectedTransmissionError(e, url)
+                downloadedCount += 1
+                pbar.set_description(str(downloadedCount) + '/' + str(len(comparer.downloadFiles)))
+
+                try:
+                    r = requests.get(url, stream=True, timeout=5)
+                    if r.status_code != 200:
+                        raise UnexpectedHttpCodeError(url, r.status_code, r.text)
+
+                    # received = 0
+                    file.makeParentDirs()
+                    with open(file.path, 'xb+') as f:
+                        for chunk in r.iter_content(chunk_size=1024 * 64):
+                            f.write(chunk)
+                            # received += len(chunk)
+                            downloadedBytes += len(chunk)
+                            pbar.update(int(len(chunk) / 1024))
+
+                except requests.exceptions.ConnectionError as e:
+                    raise FailedToConnectError(e, url)
+                except requests.exceptions.ChunkedEncodingError as e:
+                    raise UnexpectedTransmissionError(e, url)
 
     def main(self, comparer: FileCompare):
-        webview: UpdaterWebView = self.e.webview
-
         # 生成升级脚本
         batchText = self.generateBatchStatements(comparer)
 
@@ -142,15 +155,9 @@ class Upgrade:
         with open(self.tempScript.path, "w+", encoding='gbk') as f:
             f.write(batchText)
 
-        webview.invokeCallback('upgrading_before_installing')
-
         # 开始升级
         cmd = f'cd /D "{self.tempScript.parent.windowsPath}" && start {self.tempScript.name}'
         subprocess.call(cmd, shell=True)
 
         # 返回2
         self.e.exitcode = 2
-
-        # 关闭CEF窗口
-        if not self.e.webview.windowClosed:
-            self.e.webview.close()

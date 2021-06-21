@@ -3,7 +3,7 @@ import os
 import time
 
 productName = 'UpdaterHotupdatePackage'
-productVersion = time.strftime('%y-%m-%d_%H-%M-%S') if 'tag_name' not in os.environ else os.environ['tag_name']
+productVersion = '2.8.4-console-no-upgrade' if 'tag_name' not in os.environ else os.environ['tag_name']
 
 
 if __name__ == "__main__":

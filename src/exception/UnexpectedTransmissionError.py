@@ -6,3 +6,4 @@ class UnexpectedTransmissionError(BasicWrappedError):
         super(UnexpectedTransmissionError, self).__init__()
 
         self.content = f'The Connection to the server was unexpectedly interrupted\nURL: {url}\n{str(raw)}'
+        self.trans = '传输中断'

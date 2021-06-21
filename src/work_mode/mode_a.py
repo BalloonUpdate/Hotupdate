@@ -30,7 +30,7 @@ class AMode(BaseWorkMode):
         ret = False
         if 'tree' in t:
             logText += '/'
-            LogSys.debug('ModeA', logText)
+            LogSys.df('ModeA', logText)
 
             ret = False
             for tt in t['tree']:
@@ -38,7 +38,7 @@ class AMode(BaseWorkMode):
         else:
             ret = self.test(thisPath)
             logText += ' ' + str(ret)
-            LogSys.debug('ModeA', logText)
+            LogSys.df('ModeA', logText)
 
         return ret
 
@@ -54,7 +54,7 @@ class AMode(BaseWorkMode):
         ret = False
         if d.isDirectory:
             logText += '/'
-            LogSys.debug('ModeA', logText)
+            LogSys.df('ModeA', logText)
 
             ret = False
             for dd in d:
@@ -62,7 +62,7 @@ class AMode(BaseWorkMode):
         else:
             ret = self.test(thisPath)
             logText += ' ' + str(ret)
-            LogSys.debug('ModeA', logText)
+            LogSys.df('ModeA', logText)
 
         return ret
 
@@ -80,8 +80,8 @@ class AMode(BaseWorkMode):
             resultA = self.test(dPath)
             resultB = self.checkSub(t, dir.relPath(base))
 
-            LogSys.debug('ModeA', 'D:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
-            LogSys.debug('ModeA', '')
+            LogSys.df('ModeA', 'D:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
+            LogSys.df('ModeA', '')
 
             # 文件自身无法匹配 且 没有子目录/子文件被匹配 时，对其进行忽略
             if not resultA and not resultB:
@@ -125,8 +125,8 @@ class AMode(BaseWorkMode):
             # A=true时,b必定为true
             resultA = self.test(dPath)
             resultB = self.checkSub2(d, dir.relPath(base))
-            LogSys.debug('ModeA', 'E:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
-            LogSys.debug('ModeA', '')
+            LogSys.df('ModeA', 'E:Result: ' + dPath + "  direct: " + str(resultA) + "   indirect: " + str(resultB))
+            LogSys.df('ModeA', '')
 
             if resultA:
                 if t is not None:  # 如果远程端也有这个文件

@@ -8,3 +8,4 @@ class UnexpectedHttpCodeError(BasicWrappedError):
         self.content = f'The server did not return 200 as expected\nURL: {url}\nHTTP Code: {httpStatus}\n--------Raw Data Returned--------\n{data[:300]}'
         if len(data) > 300:
             self.content += '\n(and more)...'
+        self.trans = '不正确的HTTP状态码'

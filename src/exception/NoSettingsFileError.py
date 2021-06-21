@@ -7,3 +7,4 @@ class NoSettingsFileError(BasicWrappedError):
         super(NoSettingsFileError, self).__init__()
 
         self.content = 'The SettingFile not found : ' + path.path
+        self.trans = '找不到配置文件'

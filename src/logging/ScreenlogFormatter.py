@@ -2,9 +2,9 @@ import logging
 import time
 
 
-class UpdaterFormatter(logging.Formatter):
+class ScreenlogFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style='%'):
-        super(UpdaterFormatter, self).__init__(fmt, datefmt, style)
+        super(ScreenlogFormatter, self).__init__(fmt, datefmt, style)
 
     def formatTime(self, record, datefmt=None):
         converter = time.localtime(record.created)
@@ -16,7 +16,13 @@ class UpdaterFormatter(logging.Formatter):
         return s
 
     def formatMessage(self, record):
-        trans = {'CRITICAL': 'CRIT', 'WARNING': 'WARN', }
+        trans = {
+            'CRITICAL': '严重',
+            'WARNING': '警告',
+            'DEBUG': '调试',
+            'INFO': '信息',
+            'ERROR': '错误'
+        }
         if record.levelname in trans:
             record.levelname = trans[record.levelname]
 
